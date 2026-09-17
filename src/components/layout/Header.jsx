@@ -4,54 +4,35 @@
  */
 
 import React from 'react';
-import { Sun, Moon, Flame, Shield, Bike } from 'lucide-react';
+import { Sun, Moon, Shield, Bike } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { checkIsRestaurantOpen } from '../../utils/scheduleHelper';
+import logoImg from '../../assets/images/logo.png';
 
-export const Header = ({ restaurantInfo, onOpenMenu }) => {
-  const { isDarkMode, toggleTheme } = useTheme();
-  const { user, isAdmin, isDriver } = useAuth();
+const statusBadgeContainerStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '6px',
+  padding: '3px 8px',
+  borderRadius: '9999px',
+  marginTop: '3px',
+  fontSize: '0.72rem',
+  fontWeight: 700,
+  transition: 'all 0.3s ease'
+};
 
-  const isOpen = restaurantInfo?.isOpen !== false;
+const statusDotStyle = {
+  width: '6px',
+  height: '6px',
+  borderRadius: '50%',
+  flexShrink: 0
+};
 
-  return (
-    <header style={headerStyle}>
-      <div style={brandContainerStyle}>
-        <div style={logoIconStyle}>
-          <Flame size={20} color="#FFFFFF" />
-        </div>
-        <div>
-          <h1 style={titleStyle}>Chez Roger Becker</h1>
-          <div style={statusRowStyle}>
-            <span style={{ ...statusDotStyle, backgroundColor: isOpen ? '#16A34A' : '#DC2626' }} />
-            <span style={statusTextStyle}>
-              {isOpen ? 'Restaurant Ouvert' : 'Actuellement Fermé'}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div style={actionsContainerStyle}>
-        {isAdmin && (
-          <span style={badgeAdminStyle}>
-            <Shield size={13} /> Admin
-          </span>
-        )}
-        {isDriver && (
-          <span style={badgeDriverStyle}>
-            <Bike size={13} /> Livreur
-          </span>
-        )}
-        <button
-          onClick={toggleTheme}
-          style={themeButtonStyle}
-          aria-label="Basculer le mode d'affichage"
-        >
-          {isDarkMode ? <Sun size={19} color="#FBBF24" /> : <Moon size={19} color="#475569" />}
-        </button>
-      </div>
-    </header>
-  );
+const statusTextStyle = {
+  fontSize: '0.72rem',
+  fontWeight: 700,
+  lineHeight: 1
 };
 
 const headerStyle = {
@@ -73,15 +54,13 @@ const brandContainerStyle = {
   gap: '12px'
 };
 
-const logoIconStyle = {
-  width: '38px',
-  height: '38px',
-  borderRadius: '12px',
-  backgroundColor: 'var(--color-primary)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  boxShadow: '0 4px 12px rgba(230, 81, 0, 0.35)'
+const logoImgStyle = {
+  width: '40px',
+  height: '40px',
+  borderRadius: '10px',
+  objectFit: 'contain',
+  backgroundColor: 'var(--bg-elevated)',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
 };
 
 const titleStyle = {
@@ -89,25 +68,6 @@ const titleStyle = {
   fontWeight: 800,
   color: 'var(--text-primary)',
   lineHeight: 1.1
-};
-
-const statusRowStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '6px',
-  marginTop: '2px'
-};
-
-const statusDotStyle = {
-  width: '8px',
-  height: '8px',
-  borderRadius: '50%'
-};
-
-const statusTextStyle = {
-  fontSize: '0.74rem',
-  color: 'var(--text-secondary)',
-  fontWeight: 600
 };
 
 const actionsContainerStyle = {
@@ -149,4 +109,69 @@ const badgeDriverStyle = {
   borderRadius: '8px',
   backgroundColor: 'var(--color-secondary-surface)',
   color: 'var(--color-secondary-dark)'
+};
+
+export const Header = ({ restaurantInfo, onOpenMenu }) => {
+  const { isDarkMode, toggleTheme } = useTheme();
+  const { user, isAdmin, isDriver } = useAuth();
+
+  const { isOpen, statusText } = checkIsRestaurantOpen(restaurantInfo);
+
+  return (
+    <header style={headerStyle}>
+      <div style={brandContainerStyle}>
+        <img
+          src={logoImg}
+          alt="Chez Roger Becker"
+          style={logoImgStyle}
+        />
+        <div>
+          <h1 style={titleStyle}>Chez Roger Becker</h1>
+          <div
+            style={{
+              ...statusBadgeContainerStyle,
+              backgroundColor: isOpen ? 'rgba(22, 163, 74, 0.10)' : 'rgba(220, 38, 38, 0.10)',
+              border: `1px solid ${isOpen ? 'rgba(22, 163, 74, 0.25)' : 'rgba(220, 38, 38, 0.25)'}`,
+              color: isOpen ? 'var(--status-success)' : 'var(--status-error)'
+            }}
+          >
+            <span
+              style={{
+                ...statusDotStyle,
+                backgroundColor: isOpen ? 'var(--status-success)' : 'var(--status-error)',
+                boxShadow: isOpen ? '0 0 6px rgba(22, 163, 74, 0.6)' : '0 0 6px rgba(220, 38, 38, 0.6)'
+              }}
+            />
+            <span style={statusTextStyle}>
+              {statusText}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div style={actionsContainerStyle}>
+        {isAdmin && (
+          <span style={badgeAdminStyle}>
+            <Shield size={13} /> Admin
+          </span>
+        )}
+        {isDriver && (
+          <span style={badgeDriverStyle}>
+            <Bike size={13} /> Livreur
+          </span>
+        )}
+        <button
+          onClick={toggleTheme}
+          style={themeButtonStyle}
+          aria-label="Basculer le mode d'affichage"
+        >
+          {isDarkMode ? (
+            <Sun size={19} color="var(--color-secondary-light)" />
+          ) : (
+            <Moon size={19} color="var(--text-secondary)" />
+          )}
+        </button>
+      </div>
+    </header>
+  );
 };

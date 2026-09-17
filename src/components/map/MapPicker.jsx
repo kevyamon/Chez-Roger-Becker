@@ -35,7 +35,7 @@ export const MapPicker = ({ location, onLocationChange, readOnly = false }) => {
       // Icône de marqueur stylisée
       const customIcon = L.divIcon({
         className: 'custom-map-marker',
-        html: `<div style="background-color: #E65100; width: 28px; height: 28px; border-radius: 50%; border: 3px solid #FFFFFF; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;"><div style="background-color: #FFFFFF; width: 8px; height: 8px; border-radius: 50%;"></div></div>`,
+        html: `<div style="background-color: var(--color-primary, #E65100); width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--bg-elevated, #FFFFFF); box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;"><div style="background-color: var(--bg-elevated, #FFFFFF); width: 8px; height: 8px; border-radius: 50%;"></div></div>`,
         iconSize: [28, 28],
         iconAnchor: [14, 14]
       });
@@ -120,7 +120,7 @@ const containerStyle = {
 const mapWrapperStyle = {
   width: '100%',
   height: '220px',
-  backgroundColor: '#E2E8F0'
+  backgroundColor: 'var(--border-color)'
 };
 
 const gpsButtonStyle = {
@@ -130,7 +130,7 @@ const gpsButtonStyle = {
   transform: 'translateX(-50%)',
   zIndex: 400,
   backgroundColor: 'var(--color-primary)',
-  color: '#FFFFFF',
+  color: 'var(--color-primary-contrast, #FFFFFF)',
   padding: '8px 16px',
   borderRadius: '9999px',
   fontSize: '0.8rem',

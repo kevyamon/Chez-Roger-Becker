@@ -67,6 +67,27 @@ export const CheckoutPage = ({ onNavigate, onOrderSuccess }) => {
 
       if (res.success && res.data?.order) {
         const createdOrder = res.data.order;
+
+        // Enregistrement automatique dans l'historique local du navigateur
+        try {
+          const historyItem = {
+            trackingToken: createdOrder.trackingToken,
+            orderNumber: createdOrder.orderNumber,
+            createdAt: createdOrder.createdAt || new Date().toISOString(),
+            total: createdOrder.total,
+            itemsCount: items.reduce((sum, i) => sum + i.quantity, 0),
+            firstItemName: items[0]?.name || 'Commande',
+            status: createdOrder.status || 'PENDING'
+          };
+          const existing = JSON.parse(localStorage.getItem('rb_orders_history') || '[]');
+          const filtered = existing.filter(
+            (o) => o.trackingToken !== createdOrder.trackingToken && o.orderNumber !== createdOrder.orderNumber
+          );
+          localStorage.setItem('rb_orders_history', JSON.stringify([historyItem, ...filtered].slice(0, 30)));
+        } catch (e) {
+          console.warn('Erreur de sauvegarde locale de la commande:', e);
+        }
+
         clearCart();
         showSuccess('Votre commande a été enregistrée avec succès !');
         if (onOrderSuccess) {

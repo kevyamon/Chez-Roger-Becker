@@ -1,26 +1,33 @@
 /**
  * Section KPIs & Statistiques Administrateur (AdminKpiSection).
- * Affiche la synthese financiere et operationnelle en temps reel.
+ * Synthese financiere 2x2 et repartition des commandes en cartes colorees (3 en haut, 2 en bas).
  */
 
 import React from 'react';
-import { DollarSign, ShoppingBag, Clock, CheckCircle2, XCircle, TrendingUp } from 'lucide-react';
+import { DollarSign, ShoppingBag, Clock, TrendingUp, Hourglass, ChefHat, Bike, CheckCircle2, XCircle } from 'lucide-react';
 
 export const AdminKpiSection = ({ dashboardData, onSelectOrder }) => {
   const kpi = dashboardData?.kpi || {};
   const recentOrders = dashboardData?.recentOrders || [];
-
   const formatPrice = (amount) => `${Number(amount || 0).toLocaleString('fr-FR')} FCFA`;
+
+  const statusCards = [
+    { label: 'En attente', count: kpi.pendingCount || 0, color: 'var(--color-secondary)', bg: 'rgba(217, 119, 6, 0.10)', border: 'rgba(217, 119, 6, 0.25)', icon: Hourglass },
+    { label: 'En cuisine', count: kpi.preparingCount || 0, color: 'var(--color-primary)', bg: 'rgba(230, 81, 0, 0.10)', border: 'rgba(230, 81, 0, 0.25)', icon: ChefHat },
+    { label: 'En livraison', count: kpi.inDeliveryCount || 0, color: 'var(--color-accent)', bg: 'rgba(2, 132, 199, 0.10)', border: 'rgba(2, 132, 199, 0.25)', icon: Bike },
+    { label: 'Livrées', count: kpi.deliveredCount || 0, color: 'var(--status-success)', bg: 'rgba(22, 163, 74, 0.10)', border: 'rgba(22, 163, 74, 0.25)', icon: CheckCircle2 },
+    { label: 'Annulées', count: kpi.cancelledCount || 0, color: 'var(--status-error)', bg: 'rgba(220, 38, 38, 0.10)', border: 'rgba(220, 38, 38, 0.25)', icon: XCircle }
+  ];
 
   return (
     <div style={sectionContainerStyle}>
-      {/* 1. Cartes de Revenus & Volume */}
-      <div style={gridKpiStyle}>
+      {/* 1. Cartes de Revenus & Volume - Grille 2x2 symétrique */}
+      <div style={grid2x2Style}>
         <div className="card-surface" style={kpiCardStyle}>
           <div style={kpiIconWrapStyle('var(--color-primary-surface)', 'var(--color-primary)')}>
             <DollarSign size={20} />
           </div>
-          <div>
+          <div style={kpiContentStyle}>
             <span style={kpiLabelStyle}>Revenus du Jour</span>
             <h3 style={kpiValueStyle}>{formatPrice(kpi.revenueToday)}</h3>
           </div>
@@ -30,7 +37,7 @@ export const AdminKpiSection = ({ dashboardData, onSelectOrder }) => {
           <div style={kpiIconWrapStyle('var(--color-secondary-surface)', 'var(--color-secondary)')}>
             <TrendingUp size={20} />
           </div>
-          <div>
+          <div style={kpiContentStyle}>
             <span style={kpiLabelStyle}>Revenus Semaine</span>
             <h3 style={kpiValueStyle}>{formatPrice(kpi.revenueWeek)}</h3>
           </div>
@@ -40,7 +47,7 @@ export const AdminKpiSection = ({ dashboardData, onSelectOrder }) => {
           <div style={kpiIconWrapStyle('var(--color-accent-surface)', 'var(--color-accent)')}>
             <ShoppingBag size={20} />
           </div>
-          <div>
+          <div style={kpiContentStyle}>
             <span style={kpiLabelStyle}>Commandes du Jour</span>
             <h3 style={kpiValueStyle}>{kpi.ordersToday || 0}</h3>
           </div>
@@ -50,46 +57,42 @@ export const AdminKpiSection = ({ dashboardData, onSelectOrder }) => {
           <div style={kpiIconWrapStyle('var(--bg-card-header)', 'var(--text-primary)')}>
             <Clock size={20} />
           </div>
-          <div>
-            <span style={kpiLabelStyle}>En Préparation / Livraison</span>
+          <div style={kpiContentStyle}>
+            <span style={kpiLabelStyle}>En Cours</span>
             <h3 style={kpiValueStyle}>{(kpi.preparingCount || 0) + (kpi.inDeliveryCount || 0)}</h3>
           </div>
         </div>
       </div>
 
-      {/* 2. Repartition des statuts */}
-      <div className="card-surface" style={statusBreakdownCardStyle}>
+      {/* 2. Répartition des statuts - 3 en haut, 2 en bas avec fond coloré */}
+      <div className="card-surface" style={statusSectionCardStyle}>
         <h4 style={sectionTitleStyle}>Répartition des Commandes</h4>
         <div style={statusGridStyle}>
-          <div style={statusItemStyle}>
-            <span style={statusDotStyle('var(--status-warning)')} />
-            <span style={statusLabelStyle}>En attente :</span>
-            <strong style={statusCountStyle}>{kpi.pendingCount || 0}</strong>
-          </div>
-          <div style={statusItemStyle}>
-            <span style={statusDotStyle('var(--color-primary)')} />
-            <span style={statusLabelStyle}>En cuisine :</span>
-            <strong style={statusCountStyle}>{kpi.preparingCount || 0}</strong>
-          </div>
-          <div style={statusItemStyle}>
-            <span style={statusDotStyle('var(--color-accent)')} />
-            <span style={statusLabelStyle}>En livraison :</span>
-            <strong style={statusCountStyle}>{kpi.inDeliveryCount || 0}</strong>
-          </div>
-          <div style={statusItemStyle}>
-            <span style={statusDotStyle('var(--status-success)')} />
-            <span style={statusLabelStyle}>Livrées :</span>
-            <strong style={statusCountStyle}>{kpi.deliveredCount || 0}</strong>
-          </div>
-          <div style={statusItemStyle}>
-            <span style={statusDotStyle('var(--status-error)')} />
-            <span style={statusLabelStyle}>Annulées :</span>
-            <strong style={statusCountStyle}>{kpi.cancelledCount || 0}</strong>
-          </div>
+          {statusCards.map((card, idx) => {
+            const Icon = card.icon;
+            const isBottomRow = idx >= 3;
+            return (
+              <div
+                key={card.label}
+                style={{
+                  ...statusMiniCardStyle,
+                  backgroundColor: card.bg,
+                  borderColor: card.border,
+                  gridColumn: isBottomRow ? 'span 3' : 'span 2'
+                }}
+              >
+                <div style={statusHeaderStyle}>
+                  <Icon size={16} color={card.color} />
+                  <span style={{ ...statusCardLabelStyle, color: card.color }}>{card.label}</span>
+                </div>
+                <strong style={{ ...statusCardCountStyle, color: card.color }}>{card.count}</strong>
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* 3. Dernieres Commandes Recues */}
+      {/* 3. Dernières Commandes Reçues */}
       <div className="card-surface" style={recentOrdersCardStyle}>
         <h4 style={sectionTitleStyle}>Activité Récente</h4>
         {recentOrders.length === 0 ? (
@@ -125,45 +128,50 @@ const sectionContainerStyle = {
   gap: '14px'
 };
 
-const gridKpiStyle = {
+const grid2x2Style = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-  gap: '10px'
+  gridTemplateColumns: 'repeat(2, 1fr)',
+  gap: '12px'
 };
 
 const kpiCardStyle = {
   padding: '14px',
   display: 'flex',
-  alignItems: 'center',
-  gap: '12px'
+  flexDirection: 'column',
+  gap: '10px'
+};
+
+const kpiContentStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '2px'
 };
 
 const kpiIconWrapStyle = (bg, color) => ({
-  width: '42px',
-  height: '42px',
-  borderRadius: '12px',
+  width: '38px',
+  height: '38px',
+  borderRadius: '10px',
   backgroundColor: bg,
   color: color,
   display: 'flex',
   alignItems: 'center',
-  justifyContent: 'center',
-  flexShrink: 0
+  justifyContent: 'center'
 });
 
 const kpiLabelStyle = {
   fontSize: '0.74rem',
-  color: 'var(--text-secondary)',
-  display: 'block'
+  fontWeight: 600,
+  color: 'var(--text-secondary)'
 };
 
 const kpiValueStyle = {
-  fontSize: '1.05rem',
+  fontSize: '1rem',
   fontWeight: 800,
   color: 'var(--text-primary)',
-  marginTop: '2px'
+  lineHeight: 1.2
 };
 
-const statusBreakdownCardStyle = {
+const statusSectionCardStyle = {
   padding: '16px',
   display: 'flex',
   flexDirection: 'column',
@@ -178,32 +186,36 @@ const sectionTitleStyle = {
 
 const statusGridStyle = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+  gridTemplateColumns: 'repeat(6, 1fr)',
   gap: '10px'
 };
 
-const statusItemStyle = {
+const statusMiniCardStyle = {
+  padding: '12px',
+  borderRadius: '12px',
+  border: '1px solid',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'space-between',
+  gap: '8px',
+  transition: 'transform 0.15s ease'
+};
+
+const statusHeaderStyle = {
   display: 'flex',
   alignItems: 'center',
-  gap: '8px',
-  fontSize: '0.82rem'
+  gap: '6px'
 };
 
-const statusDotStyle = (color) => ({
-  width: '10px',
-  height: '10px',
-  borderRadius: '50%',
-  backgroundColor: color,
-  flexShrink: 0
-});
-
-const statusLabelStyle = {
-  color: 'var(--text-secondary)'
+const statusCardLabelStyle = {
+  fontSize: '0.74rem',
+  fontWeight: 700
 };
 
-const statusCountStyle = {
-  color: 'var(--text-primary)',
-  marginLeft: 'auto'
+const statusCardCountStyle = {
+  fontSize: '1.25rem',
+  fontWeight: 800,
+  lineHeight: 1
 };
 
 const recentOrdersCardStyle = {

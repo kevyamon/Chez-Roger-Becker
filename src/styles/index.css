@@ -93,7 +93,7 @@ input:focus, textarea:focus, select:focus {
   display: flex;
   flex-direction: column;
   box-shadow: 0 0 40px rgba(0, 0, 0, 0.05);
-  padding-bottom: calc(75px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px));
 }
 
 @media (min-width: 1024px) {
@@ -102,41 +102,64 @@ input:focus, textarea:focus, select:focus {
   }
 }
 
-/* TabBar Navigation Basse Style Application Mobile */
+/* TabBar Navigation Flottante Style iOS 26 */
 .mobile-tabbar {
   position: fixed;
-  bottom: 0;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
-  width: 100%;
-  max-width: 520px;
+  width: calc(100% - 24px);
+  max-width: 440px;
   background: var(--tabbar-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-top: 1px solid var(--tabbar-border);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--tabbar-border);
+  border-radius: 9999px;
   display: flex;
   justify-content: space-around;
   align-items: center;
-  padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+  padding: 6px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04);
   z-index: 90;
+  transition: all 0.3s ease;
+}
+
+/* Bulle active fluide comme de l'eau (Liquid Sliding Indicator) */
+.tabbar-indicator {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  border-radius: 9999px;
+  background: var(--tabbar-indicator-bg, rgba(230, 81, 0, 0.10));
+  border: 1px solid var(--tabbar-indicator-border, rgba(230, 81, 0, 0.18));
+  box-shadow: 0 2px 10px rgba(230, 81, 0, 0.08);
+  transition: left 0.45s cubic-bezier(0.22, 1, 0.36, 1), width 0.35s ease;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .tab-item {
+  position: relative;
+  z-index: 2;
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   color: var(--text-muted);
-  font-size: 0.72rem;
+  font-size: 0.70rem;
   font-weight: 600;
-  padding: 6px 12px;
-  border-radius: 12px;
-  transition: color 0.2s ease, transform 0.15s ease;
+  padding: 6px 4px;
+  border-radius: 9999px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.35s cubic-bezier(0.22, 1, 0.36, 1), transform 0.2s ease;
 }
 
 .tab-item.active {
   color: var(--color-primary);
-  transform: translateY(-2px);
+  font-weight: 700;
 }
 
 /* Badge de Panier */
@@ -145,7 +168,7 @@ input:focus, textarea:focus, select:focus {
   top: -4px;
   right: -8px;
   background-color: var(--color-primary);
-  color: #FFFFFF;
+  color: var(--color-primary-contrast, #FFFFFF);
   font-size: 0.65rem;
   font-weight: 800;
   border-radius: 9999px;
@@ -180,3 +203,70 @@ input:focus, textarea:focus, select:focus {
 .card-surface:hover {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
+
+/* Animation Slide Texte Hero (Droite vers Gauche) */
+@keyframes slideRightToLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Animation Vague Lumineuse Séquentielle des Mots avec pause de 3 secondes */
+@keyframes wordPulseCycle {
+  0% {
+    transform: translateY(0) translateZ(0);
+    color: var(--color-primary-contrast, #FFFFFF);
+    opacity: 0.88;
+    text-shadow: none;
+  }
+  10% {
+    transform: translateY(-2.5px) translateZ(0);
+    color: var(--color-secondary-light, #FBBF24);
+    opacity: 1;
+    text-shadow: 0 2px 14px rgba(251, 191, 36, 0.55);
+  }
+  22% {
+    transform: translateY(0) translateZ(0);
+    color: var(--color-primary-contrast, #FFFFFF);
+    opacity: 0.88;
+    text-shadow: none;
+  }
+  100% {
+    transform: translateY(0) translateZ(0);
+    color: var(--color-primary-contrast, #FFFFFF);
+    opacity: 0.88;
+    text-shadow: none;
+  }
+}
+
+.slogan-slide {
+  animation: slideRightToLeft 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.pulsing-word {
+  display: inline-block;
+  animation: wordPulseCycle 4.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+  transform: translateZ(0);
+  will-change: transform, color, opacity;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+
+

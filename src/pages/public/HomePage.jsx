@@ -4,9 +4,11 @@
  */
 
 import React from 'react';
-import { Flame, ArrowRight, Clock, MapPin, Phone } from 'lucide-react';
+import { ArrowRight, Clock, MapPin, Phone } from 'lucide-react';
 import { DishCard } from '../../components/menu/DishCard';
 import { Button } from '../../components/ui/Button';
+import { AnimatedHeroSlogan } from '../../components/ui/AnimatedHeroSlogan';
+import bgHeroImg from '../../assets/images/bg.png';
 
 export const HomePage = ({
   dishes = [],
@@ -17,24 +19,17 @@ export const HomePage = ({
 }) => {
   const featuredDishes = dishes.filter((d) => d.isFeatured).slice(0, 4);
   const activePromo = promotions[0];
-  const openingHours = (restaurant.openingHours || 'Mardi – Dimanche : 11h00 – 23h00 (Fermé le lundi)')
-    .replace(/Ferme\s+le\s+lundi/gi, 'Fermé le lundi');
-  const address = (restaurant.address || "Abidjan, Côte d'Ivoire")
-    .replace(/Cote\s+d\s*Ivoire/gi, "Côte d'Ivoire");
 
   return (
     <div className="animate-fade-in" style={pageStyle}>
       {/* 1. HERO BANNER */}
       <section style={heroStyle}>
         <div style={heroOverlayStyle}>
-          <div style={badgeStyle}>
-            <Flame size={15} color="#FF7A00" />
-            <span>L'authenticité des grillades à Abidjan</span>
-          </div>
           <h2 style={heroTitleStyle}>Chez Roger Becker</h2>
-          <p style={heroSubtitleStyle}>
-            {restaurant.description || 'Découvrez nos spécialités au feu de bois et commandez en direct en quelques secondes.'}
-          </p>
+          
+          {/* Slogan animé alterné toutes les 10s avec mots pulsants */}
+          <AnimatedHeroSlogan />
+
           <div style={heroActionsStyle}>
             <Button
               variant="primary"
@@ -94,11 +89,11 @@ export const HomePage = ({
           <h3 style={infoTitleStyle}>Horaires & Contact</h3>
           <div style={infoRowStyle}>
             <Clock size={18} color="var(--color-primary)" />
-            <span>{openingHours}</span>
+            <span>{restaurant.openingHours || 'Mardi – Dimanche : 11h00 – 23h00 (Fermé le lundi)'}</span>
           </div>
           <div style={infoRowStyle}>
             <MapPin size={18} color="var(--color-primary)" />
-            <span>{address}</span>
+            <span>{restaurant.address || "Cocody Vallon, Rue des Jardins, Abidjan, Côte d'Ivoire"}</span>
           </div>
           <div style={infoRowStyle}>
             <Phone size={18} color="var(--color-primary)" />
@@ -121,10 +116,10 @@ const pageStyle = {
 
 const heroStyle = {
   position: 'relative',
-  backgroundImage: 'url("https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=1000&q=80")',
+  backgroundImage: `url(${bgHeroImg})`,
   backgroundSize: 'cover',
   backgroundPosition: 'center',
-  minHeight: '260px',
+  minHeight: '270px',
   display: 'flex',
   alignItems: 'flex-end'
 };
@@ -132,35 +127,15 @@ const heroStyle = {
 const heroOverlayStyle = {
   width: '100%',
   padding: '24px 18px',
-  background: 'linear-gradient(to top, rgba(11, 17, 32, 0.92) 0%, rgba(11, 17, 32, 0.4) 70%, transparent 100%)',
-  color: '#FFFFFF'
-};
-
-const badgeStyle = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '6px',
-  backgroundColor: 'rgba(255, 255, 255, 0.15)',
-  backdropFilter: 'blur(8px)',
-  padding: '4px 10px',
-  borderRadius: '20px',
-  fontSize: '0.74rem',
-  fontWeight: 700,
-  marginBottom: '8px'
+  background: 'linear-gradient(to top, rgba(11, 17, 32, 0.94) 0%, rgba(11, 17, 32, 0.45) 75%, transparent 100%)',
+  color: 'var(--color-primary-contrast, #FFFFFF)'
 };
 
 const heroTitleStyle = {
   fontSize: '1.8rem',
   fontWeight: 800,
   lineHeight: 1.15,
-  marginBottom: '6px'
-};
-
-const heroSubtitleStyle = {
-  fontSize: '0.86rem',
-  color: '#E2E8F0',
-  lineHeight: 1.4,
-  marginBottom: '16px'
+  marginBottom: '4px'
 };
 
 const heroActionsStyle = {

@@ -1,6 +1,6 @@
 /**
  * Tableau de bord administrateur (AdminDashboardPage).
- * Orchestrateur modulaire mobile-first reliant les vues d'indicateurs, commandes, menu, livreurs et reglages.
+ * Orchestrateur modulaire mobile-first avec TabBar flottante inférieure style iOS 26.
  */
 
 import React, { useEffect, useState } from 'react';
@@ -9,7 +9,7 @@ import { useToast } from '../../context/ToastContext';
 import { applyTheme } from '../../styles/theme';
 
 import { AdminHeader } from './components/AdminHeader';
-import { AdminNavTabs } from './components/AdminNavTabs';
+import { AdminTabBar } from './components/AdminTabBar';
 import { AdminKpiSection } from './components/AdminKpiSection';
 import { AdminOrdersSection } from './components/AdminOrdersSection';
 import { AdminOrderDetailsModal } from './components/AdminOrderDetailsModal';
@@ -27,7 +27,7 @@ export const AdminDashboardPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdatingStore, setIsUpdatingStore] = useState(false);
 
-  // Etats des donnees
+  // États des données
   const [dashboardData, setDashboardData] = useState(null);
   const [settings, setSettings] = useState(null);
   const [orders, setOrders] = useState([]);
@@ -41,7 +41,6 @@ export const AdminDashboardPage = () => {
   const [isDishModalOpen, setIsDishModalOpen] = useState(false);
   const [selectedDish, setSelectedDish] = useState(null);
 
-  // Bascule du theme Jour / Nuit
   const handleToggleTheme = () => {
     const nextDark = !isDark;
     setIsDark(nextDark);
@@ -63,12 +62,12 @@ export const AdminDashboardPage = () => {
       ]);
 
       if (dashRes.success) setDashboardData(dashRes.data);
-      if (setRes.success) setSettings(setRes.data?.settings);
-      if (ordersRes.success) setOrders(ordersRes.data || []);
-      if (dishesRes.success) setDishes(dishesRes.data || []);
-      if (catRes.success) setCategories(catRes.data?.categories || []);
-      if (driversRes.success) setDrivers(driversRes.data?.drivers || []);
-      if (auditRes.success) setAuditLogs(auditRes.data || []);
+      if (setRes.success) setSettings(setRes.data?.settings || setRes.data);
+      if (ordersRes.success) setOrders(ordersRes.data?.items || ordersRes.data || []);
+      if (dishesRes.success) setDishes(dishesRes.data?.items || dishesRes.data || []);
+      if (catRes.success) setCategories(catRes.data?.categories || catRes.data || []);
+      if (driversRes.success) setDrivers(driversRes.data?.drivers || driversRes.data || []);
+      if (auditRes.success) setAuditLogs(auditRes.data?.items || auditRes.data || []);
     } catch (err) {
       showError(err.message || 'Erreur de chargement des données.');
     } finally {
@@ -161,7 +160,7 @@ export const AdminDashboardPage = () => {
     try {
       const res = await apiClient.patch('/admin/settings', newSettings);
       if (res.success) {
-        setSettings(res.data?.settings);
+        setSettings(res.data?.settings || res.data);
         showSuccess('Paramètres du restaurant mis à jour.');
       }
     } catch (err) {
@@ -177,12 +176,6 @@ export const AdminDashboardPage = () => {
         onToggleTheme={handleToggleTheme}
         onToggleStoreStatus={handleToggleStoreStatus}
         isUpdatingStore={isUpdatingStore}
-      />
-
-      <AdminNavTabs
-        activeSection={activeSection}
-        onSelectSection={setActiveSection}
-        pendingOrdersCount={dashboardData?.kpi?.pendingCount || 0}
       />
 
       <main style={{ minHeight: '50vh' }}>
@@ -243,7 +236,14 @@ export const AdminDashboardPage = () => {
         )}
       </main>
 
-      {/* Modale Details Commande */}
+      {/* Barre de navigation inférieure Administrateur Style iOS 26 */}
+      <AdminTabBar
+        activeSection={activeSection}
+        onSelectSection={setActiveSection}
+        pendingOrdersCount={dashboardData?.kpi?.pendingCount || 0}
+      />
+
+      {/* Modale Détails Commande */}
       {selectedOrder && (
         <AdminOrderDetailsModal
           isOpen={Boolean(selectedOrder)}
@@ -254,7 +254,7 @@ export const AdminDashboardPage = () => {
         />
       )}
 
-      {/* Modale Edition / Creation Plat */}
+      {/* Modale Édition / Création Plat */}
       <DishEditModal
         isOpen={isDishModalOpen}
         onClose={() => setIsDishModalOpen(false)}
@@ -271,7 +271,7 @@ const containerStyle = {
   display: 'flex',
   flexDirection: 'column',
   gap: '14px',
-  paddingBottom: '40px',
+  paddingBottom: '90px',
   maxWidth: '720px',
   margin: '0 auto'
 };

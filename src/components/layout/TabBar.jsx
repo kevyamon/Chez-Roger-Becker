@@ -1,6 +1,6 @@
 /**
- * Barre de navigation inferieure (TabBar) Mobile-First.
- * Inclut le detecteur secret d'administration robuste avec jauge circulaire de progression visible (10s).
+ * Barre de navigation inferieure (TabBar) Flottante Style iOS 26.
+ * Inclut l'indicateur actif fluide comme de l'eau et le detecteur secret d'administration (10s).
  */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -24,10 +24,14 @@ export const TabBar = ({ activeTab, onSelectTab }) => {
 
   const tabs = [
     { id: 'home', label: 'Accueil', icon: Home },
-    { id: 'menu', label: 'La Carte', icon: UtensilsCrossed },
+    { id: 'menu', label: 'Menu', icon: UtensilsCrossed },
     { id: 'cart', label: 'Panier', icon: ShoppingBag, badge: totalCount },
-    { id: 'track', label: 'Suivi', icon: Compass }
+    { id: 'track', label: 'Mes commandes', icon: Compass }
   ];
+
+  const activeIndex = tabs.findIndex((tab) => tab.id === activeTab);
+  const validIndex = activeIndex !== -1 ? activeIndex : 0;
+  const isTabActive = activeIndex !== -1;
 
   const cancelAnimation = () => {
     if (animationFrameRef.current) {
@@ -128,6 +132,17 @@ export const TabBar = ({ activeTab, onSelectTab }) => {
 
   return (
     <nav className="mobile-tabbar" aria-label="Navigation principale">
+      {/* Bulle fluide glissante (iOS 26 Liquid Indicator) */}
+      {isTabActive && (
+        <div
+          className="tabbar-indicator"
+          style={{
+            width: `calc((100% - 12px) / ${tabs.length})`,
+            left: `calc(6px + ${validIndex} * ((100% - 12px) / ${tabs.length}))`
+          }}
+        />
+      )}
+
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
@@ -143,7 +158,6 @@ export const TabBar = ({ activeTab, onSelectTab }) => {
             onContextMenu={isHome ? (e) => { e.preventDefault(); e.stopPropagation(); } : undefined}
             className={`tab-item ${isActive ? 'active' : ''}`}
             style={{
-              position: 'relative',
               touchAction: 'none',
               userSelect: 'none',
               WebkitUserSelect: 'none',
@@ -209,14 +223,14 @@ const iconContainerStyle = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  width: '38px',
-  height: '38px'
+  width: '34px',
+  height: '34px'
 };
 
 const svgProgressStyle = {
   position: 'absolute',
-  top: '-3px',
-  left: '-3px',
+  top: '-5px',
+  left: '-5px',
   transform: 'rotate(-90deg)',
   pointerEvents: 'none',
   zIndex: 1

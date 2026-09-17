@@ -1,10 +1,11 @@
 /**
  * Section Gestion des Commandes en direct (AdminOrdersSection).
- * Filtrage par statut, mise a jour des etapes et assignation des livreurs.
+ * Filtrage par statut, recherche et affichage paginé sécurisé.
  */
 
 import React, { useState } from 'react';
-import { Search, Filter, Phone, MapPin, Eye, Check, Clock } from 'lucide-react';
+import { Search, Clock } from 'lucide-react';
+import { AdminOrderCard } from './AdminOrderCard';
 
 export const AdminOrdersSection = ({
   orders = [],
@@ -25,7 +26,9 @@ export const AdminOrdersSection = ({
     { id: 'CANCELLED', label: 'Annulées' }
   ];
 
-  const filteredOrders = orders.filter((ord) => {
+  const safeOrders = Array.isArray(orders) ? orders : (orders?.items || []);
+
+  const filteredOrders = safeOrders.filter((ord) => {
     const matchesStatus = filterStatus === 'ALL' || ord.status === filterStatus;
     const matchesSearch =
       !searchQuery.trim() ||
@@ -34,8 +37,6 @@ export const AdminOrdersSection = ({
       ord.customer?.phone?.includes(searchQuery);
     return matchesStatus && matchesSearch;
   });
-
-  const formatPrice = (amount) => `${Number(amount || 0).toLocaleString('fr-FR')} FCFA`;
 
   return (
     <div style={containerStyle}>
@@ -77,65 +78,12 @@ export const AdminOrdersSection = ({
       ) : (
         <div style={ordersGridStyle}>
           {filteredOrders.map((ord) => (
-            <div key={ord._id} className="card-surface" style={orderCardStyle}>
-              <div style={orderHeaderStyle}>
-                <div>
-                  <span style={orderNumberStyle}>{ord.orderNumber}</span>
-                  <p style={dateStyle}>{new Date(ord.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
-                </div>
-                <span style={statusBadgeStyle(ord.status)}>{ord.status}</span>
-              </div>
-
-              <div style={customerInfoStyle}>
-                <p style={customerNameStyle}>{ord.customer?.firstName} {ord.customer?.lastName}</p>
-                <div style={infoRowStyle}>
-                  <Phone size={13} color="var(--color-primary)" />
-                  <span>{ord.customer?.phone}</span>
-                </div>
-                <div style={infoRowStyle}>
-                  <MapPin size={13} color="var(--color-primary)" />
-                  <span style={{ fontSize: '0.78rem' }}>{ord.delivery?.address}</span>
-                </div>
-              </div>
-
-              <div style={orderFooterStyle}>
-                <div>
-                  <span style={totalLabelStyle}>Total commande :</span>
-                  <strong style={totalPriceStyle}>{formatPrice(ord.total)}</strong>
-                </div>
-
-                <div style={actionButtonsStyle}>
-                  <button
-                    type="button"
-                    onClick={() => onSelectOrder(ord)}
-                    style={viewButtonStyle}
-                    title="Voir les détails"
-                  >
-                    <Eye size={15} />
-                    <span>Détails</span>
-                  </button>
-
-                  {ord.status === 'PENDING' && (
-                    <button
-                      type="button"
-                      onClick={() => onUpdateStatus(ord._id, 'CONFIRMED')}
-                      style={confirmButtonStyle}
-                    >
-                      <Check size={14} /> Confirmer
-                    </button>
-                  )}
-                  {ord.status === 'CONFIRMED' && (
-                    <button
-                      type="button"
-                      onClick={() => onUpdateStatus(ord._id, 'PREPARING')}
-                      style={confirmButtonStyle}
-                    >
-                      Cuisine
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
+            <AdminOrderCard
+              key={ord._id}
+              order={ord}
+              onSelectOrder={onSelectOrder}
+              onUpdateStatus={onUpdateStatus}
+            />
           ))}
         </div>
       )}
@@ -211,115 +159,6 @@ const ordersGridStyle = {
   display: 'flex',
   flexDirection: 'column',
   gap: '10px'
-};
-
-const orderCardStyle = {
-  padding: '14px',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '10px'
-};
-
-const orderHeaderStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  borderBottom: '1px solid var(--border-color)',
-  paddingBottom: '8px'
-};
-
-const orderNumberStyle = {
-  fontSize: '0.88rem',
-  fontWeight: 800,
-  color: 'var(--color-primary)'
-};
-
-const dateStyle = {
-  fontSize: '0.72rem',
-  color: 'var(--text-muted)'
-};
-
-const statusBadgeStyle = (status) => ({
-  fontSize: '0.7rem',
-  fontWeight: 800,
-  padding: '3px 8px',
-  borderRadius: '6px',
-  backgroundColor: status === 'DELIVERED' ? 'var(--color-accent-surface)' : 'var(--color-primary-surface)',
-  color: status === 'DELIVERED' ? 'var(--color-accent-dark)' : 'var(--color-primary-dark)'
-});
-
-const customerInfoStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '4px'
-};
-
-const customerNameStyle = {
-  fontSize: '0.88rem',
-  fontWeight: 700,
-  color: 'var(--text-primary)'
-};
-
-const infoRowStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '6px',
-  fontSize: '0.8rem',
-  color: 'var(--text-secondary)'
-};
-
-const orderFooterStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  paddingTop: '8px',
-  borderTop: '1px solid var(--border-color)'
-};
-
-const totalLabelStyle = {
-  fontSize: '0.72rem',
-  color: 'var(--text-muted)',
-  display: 'block'
-};
-
-const totalPriceStyle = {
-  fontSize: '0.92rem',
-  fontWeight: 800,
-  color: 'var(--text-primary)'
-};
-
-const actionButtonsStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '6px'
-};
-
-const viewButtonStyle = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '4px',
-  padding: '6px 10px',
-  borderRadius: '8px',
-  backgroundColor: 'var(--bg-card-header)',
-  border: '1px solid var(--border-color)',
-  color: 'var(--text-primary)',
-  fontSize: '0.78rem',
-  fontWeight: 700,
-  cursor: 'pointer'
-};
-
-const confirmButtonStyle = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '4px',
-  padding: '6px 12px',
-  borderRadius: '8px',
-  backgroundColor: 'var(--status-success)',
-  border: 'none',
-  color: '#FFFFFF',
-  fontSize: '0.78rem',
-  fontWeight: 700,
-  cursor: 'pointer'
 };
 
 const emptyCardStyle = {

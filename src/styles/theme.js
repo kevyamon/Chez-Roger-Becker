@@ -55,8 +55,10 @@ export const theme = {
       border: '#E2E8F0',
       borderFocus: '#E65100',
       cardShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
-      tabBarBg: 'rgba(255, 255, 255, 0.95)',
-      tabBarBorder: '#E2E8F0'
+      tabBarBg: 'rgba(255, 255, 255, 0.92)',
+      tabBarBorder: 'rgba(226, 232, 240, 0.85)',
+      tabBarIndicatorBg: 'rgba(230, 81, 0, 0.10)',
+      tabBarIndicatorBorder: 'rgba(230, 81, 0, 0.18)'
     },
     dark: {
       bgPrimary: '#0B1120',
@@ -68,8 +70,10 @@ export const theme = {
       border: '#334155',
       borderFocus: '#FF7A00',
       cardShadow: '0 4px 24px rgba(0, 0, 0, 0.4)',
-      tabBarBg: 'rgba(15, 23, 42, 0.95)',
-      tabBarBorder: '#334155'
+      tabBarBg: 'rgba(15, 23, 42, 0.88)',
+      tabBarBorder: 'rgba(51, 65, 85, 0.85)',
+      tabBarIndicatorBg: 'rgba(255, 122, 0, 0.15)',
+      tabBarIndicatorBorder: 'rgba(255, 122, 0, 0.25)'
     }
   },
 
@@ -125,6 +129,8 @@ export const applyTheme = (isDark = false) => {
   root.style.setProperty('--card-shadow', currentMode.cardShadow);
   root.style.setProperty('--tabbar-bg', currentMode.tabBarBg);
   root.style.setProperty('--tabbar-border', currentMode.tabBarBorder);
+  root.style.setProperty('--tabbar-indicator-bg', currentMode.tabBarIndicatorBg);
+  root.style.setProperty('--tabbar-indicator-border', currentMode.tabBarIndicatorBorder);
   root.style.setProperty('--bg-card-header', isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)');
 
   if (isDark) {

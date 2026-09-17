@@ -20,7 +20,7 @@ export const CartPage = ({ onNavigate }) => {
         <h3 style={emptyTitleStyle}>Votre panier est vide</h3>
         <p style={emptySubtitleStyle}>Laissez-vous tenter par nos délicieuses grillades et spécialités cuites au feu de bois.</p>
         <Button variant="primary" size="lg" onClick={() => onNavigate('menu')} style={{ marginTop: '12px' }}>
-          Découvrir la carte
+          Découvrir le menu
         </Button>
       </div>
     );
@@ -60,7 +60,7 @@ export const CartPage = ({ onNavigate }) => {
                   <Plus size={14} />
                 </button>
                 <button onClick={() => removeItem(item.dishId)} style={removeBtnStyle}>
-                  <Trash2 size={15} color="#DC2626" />
+                  <Trash2 size={15} color="var(--status-error)" />
                 </button>
               </div>
             </div>
@@ -154,7 +154,7 @@ const titleStyle = {
 
 const clearButtonStyle = {
   fontSize: '0.8rem',
-  color: '#DC2626',
+  color: 'var(--status-error)',
   fontWeight: 600
 };
 
