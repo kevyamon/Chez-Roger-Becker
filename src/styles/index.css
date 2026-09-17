@@ -1,0 +1,182 @@
+/**
+ * Styles globaux et systeme de design CSS pour Chez Roger Becker.
+ * Approche 100 % Mobile-First, responsive tablette/desktop et compatible PWA.
+ */
+
+:root {
+  --color-primary: #E65100;
+  --color-primary-light: #FF7A00;
+  --color-primary-dark: #BF360C;
+  --color-primary-surface: #FFF3E0;
+  
+  --color-secondary: #D97706;
+  --color-secondary-light: #FBBF24;
+  --color-secondary-surface: #FEF3C7;
+  
+  --color-accent: #0284C7;
+  --color-accent-light: #38BDF8;
+  --color-accent-surface: #E0F2FE;
+
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F8FAFC;
+  --bg-elevated: #FFFFFF;
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #94A3B8;
+  --border-color: #E2E8F0;
+  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  --tabbar-bg: rgba(255, 255, 255, 0.95);
+  --tabbar-border: #E2E8F0;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+h1, h2, h3, h4, .font-heading {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  background: none;
+  transition: transform 0.15s ease, opacity 0.15s ease, background-color 0.2s ease;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+input, textarea, select {
+  font-family: inherit;
+  font-size: 1rem;
+  border: 1.5px solid var(--border-color);
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
+  border-radius: 12px;
+  padding: 12px 16px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-surface);
+}
+
+/* Layout d'application Mobile-First avec centrage elegant sur grand ecran */
+.app-container {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.05);
+  padding-bottom: calc(75px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 1024px) {
+  .app-container.desktop-expanded {
+    max-width: 1200px;
+  }
+}
+
+/* TabBar Navigation Basse Style Application Mobile */
+.mobile-tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 520px;
+  background: var(--tabbar-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--tabbar-border);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+  z-index: 90;
+}
+
+.tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 12px;
+  transition: color 0.2s ease, transform 0.15s ease;
+}
+
+.tab-item.active {
+  color: var(--color-primary);
+  transform: translateY(-2px);
+}
+
+/* Badge de Panier */
+.badge-count {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  background-color: var(--color-primary);
+  color: #FFFFFF;
+  font-size: 0.65rem;
+  font-weight: 800;
+  border-radius: 9999px;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  box-shadow: 0 2px 6px rgba(230, 81, 0, 0.4);
+}
+
+/* Animations et transitions douces */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Cartes et surfaces */
+.card-surface {
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: var(--card-shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-surface:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
