@@ -64,7 +64,7 @@ button:active {
   transform: scale(0.97);
 }
 
-input, textarea, select {
+input:not([type="checkbox"]):not([type="radio"]), textarea, select {
   font-family: inherit;
   font-size: 1rem;
   border: 1.5px solid var(--border-color);
@@ -77,9 +77,19 @@ input, textarea, select {
   width: 100%;
 }
 
-input:focus, textarea:focus, select:focus {
+input:not([type="checkbox"]):not([type="radio"]):focus, textarea:focus, select:focus {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px var(--color-primary-surface);
+}
+
+input[type="checkbox"], input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
 }
 
 /* Layout d'application Mobile-First avec centrage elegant sur grand ecran */

@@ -1,10 +1,10 @@
 /**
  * Carte de plat gastronomique (DishCard).
- * Met en valeur les photos, les prix promotionnels et le bouton d'ajout rapide au panier.
+ * Met en valeur les photos, badges de type (Nourriture/Boisson), catégorie (Normal/VIP/Spécial), prix et ajout rapide.
  */
 
 import React from 'react';
-import { Plus, Tag } from 'lucide-react';
+import { Plus, Tag, Utensils, GlassWater } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useToast } from '../../context/ToastContext';
 
@@ -14,11 +14,24 @@ export const DishCard = ({ dish, onSelect }) => {
 
   const isPromo = dish.promotionalPrice && dish.promotionalPrice < dish.price;
   const displayPrice = isPromo ? dish.promotionalPrice : dish.price;
+  const dishType = dish.type || 'Nourriture';
+  const dishCategory = dish.category || dish.categoryId?.name || 'Normal';
 
   const handleQuickAdd = (e) => {
     e.stopPropagation();
     addItem(dish, 1);
     showSuccess(`${dish.name} a été ajouté à votre panier.`);
+  };
+
+  const getCategoryBadgeStyle = () => {
+    switch (dishCategory) {
+      case 'VIP':
+        return vipBadgeStyle;
+      case 'Spécial':
+        return specialBadgeStyle;
+      default:
+        return normalBadgeStyle;
+    }
   };
 
   return (
@@ -33,9 +46,22 @@ export const DishCard = ({ dish, onSelect }) => {
             e.target.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80';
           }}
         />
+
+        {/* Badges en superposition */}
+        <div style={topBadgesRowStyle}>
+          <div style={typeBadgeStyle}>
+            {dishType === 'Boisson' ? <GlassWater size={11} /> : <Utensils size={11} />}
+            <span>{dishType}</span>
+          </div>
+
+          <div style={getCategoryBadgeStyle()}>
+            <span>{dishCategory}</span>
+          </div>
+        </div>
+
         {isPromo && (
           <div style={promoBadgeStyle}>
-            <Tag size={12} />
+            <Tag size={11} />
             <span>Offre Spéciale</span>
           </div>
         )}
@@ -89,20 +115,67 @@ const imageStyle = {
   transition: 'transform 0.3s ease'
 };
 
+const topBadgesRowStyle = {
+  position: 'absolute',
+  top: '10px',
+  left: '10px',
+  right: '10px',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  pointerEvents: 'none'
+};
+
+const basePillBadgeStyle = {
+  padding: '4px 8px',
+  borderRadius: '6px',
+  fontSize: '0.70rem',
+  fontWeight: 800,
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '4px',
+  backdropFilter: 'blur(8px)',
+  boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)'
+};
+
+const typeBadgeStyle = {
+  ...basePillBadgeStyle,
+  backgroundColor: 'rgba(15, 23, 42, 0.78)',
+  color: '#FFFFFF'
+};
+
+const vipBadgeStyle = {
+  ...basePillBadgeStyle,
+  backgroundColor: 'var(--color-secondary)',
+  color: '#FFFFFF'
+};
+
+const specialBadgeStyle = {
+  ...basePillBadgeStyle,
+  backgroundColor: 'var(--color-primary)',
+  color: '#FFFFFF'
+};
+
+const normalBadgeStyle = {
+  ...basePillBadgeStyle,
+  backgroundColor: 'rgba(255, 255, 255, 0.90)',
+  color: '#0F172A'
+};
+
 const promoBadgeStyle = {
   position: 'absolute',
-  top: '12px',
-  left: '12px',
+  bottom: '10px',
+  left: '10px',
   backgroundColor: 'var(--color-primary)',
   color: '#FFFFFF',
-  padding: '4px 10px',
-  borderRadius: '8px',
-  fontSize: '0.72rem',
+  padding: '3px 8px',
+  borderRadius: '6px',
+  fontSize: '0.68rem',
   fontWeight: 800,
   display: 'flex',
   alignItems: 'center',
   gap: '4px',
-  boxShadow: '0 4px 10px rgba(230, 81, 0, 0.4)'
+  boxShadow: '0 2px 8px rgba(230, 81, 0, 0.4)'
 };
 
 const contentStyle = {
@@ -165,3 +238,4 @@ const addButtonStyle = {
   justifyContent: 'center',
   boxShadow: '0 4px 12px rgba(230, 81, 0, 0.35)'
 };
+

@@ -1,5 +1,5 @@
 /**
- * Client de communication temps reel (Socket.IO) pour Chez Roger Becker.
+ * Client de communication temps réel (Socket.IO) pour Chez Roger Becker.
  */
 
 import { io } from 'socket.io-client';
@@ -9,7 +9,10 @@ const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://chez-roger-becker
 export const socket = io(SOCKET_URL, {
   autoConnect: true,
   withCredentials: true,
-  transports: ['websocket', 'polling']
+  transports: ['websocket', 'polling'],
+  reconnection: true,
+  reconnectionAttempts: 10,
+  reconnectionDelay: 1500
 });
 
 /**
@@ -35,3 +38,4 @@ export const joinAdminRoom = () => {
 export const joinDriversRoom = () => {
   socket.emit('join:drivers');
 };
+

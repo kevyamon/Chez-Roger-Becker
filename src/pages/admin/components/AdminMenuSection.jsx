@@ -1,41 +1,55 @@
 /**
  * Section Gestion du Menu & Catalogue (AdminMenuSection).
- * Affichage des plats par categorie, bascule instantanee de disponibilite et ajout de plats.
+ * Affichage des plats, filtres combinés Type & Catégorie, recherche et gestion.
  */
 
-import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, CheckCircle2, XCircle, Search } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Plus, Search } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
+import { AdminDishCard } from './AdminDishCard';
+
+const TYPE_FILTERS = ['TOUS', 'Nourriture', 'Boisson'];
+const CATEGORY_FILTERS = ['TOUTES', 'Normal', 'VIP', 'Spécial'];
 
 export const AdminMenuSection = ({
   dishes = [],
-  categories = [],
   onOpenCreateDish,
   onOpenEditDish,
   onToggleAvailability,
   onDeleteDish
 }) => {
-  const [selectedCategory, setSelectedCategory] = useState('ALL');
+  const [selectedType, setSelectedType] = useState('TOUS');
+  const [selectedCategory, setSelectedCategory] = useState('TOUTES');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredDishes = dishes.filter((d) => {
-    const matchesCategory = selectedCategory === 'ALL' || d.categoryId?._id === selectedCategory || d.categoryId === selectedCategory;
-    const matchesSearch = !searchQuery.trim() || d.name?.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const filteredDishes = useMemo(() => {
+    return dishes.filter((dish) => {
+      const dishType = dish.type || 'Nourriture';
+      const dishCat = dish.category || dish.categoryId?.name || 'Normal';
+
+      const matchType = selectedType === 'TOUS' || dishType === selectedType;
+      const matchCat = selectedCategory === 'TOUTES' || dishCat === selectedCategory;
+      const matchSearch =
+        !searchQuery.trim() ||
+        dish.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        dish.description?.toLowerCase().includes(searchQuery.toLowerCase());
+
+      return matchType && matchCat && matchSearch;
+    });
+  }, [dishes, selectedType, selectedCategory, searchQuery]);
 
   const formatPrice = (amount) => `${Number(amount || 0).toLocaleString('fr-FR')} FCFA`;
 
   return (
     <div style={containerStyle}>
-      {/* 1. Barre d'actions & Filtres */}
+      {/* 1. Barre d'actions & Recherche */}
       <div className="card-surface" style={actionCardStyle}>
         <div style={topActionsRowStyle}>
           <div style={searchWrapStyle}>
             <Search size={16} color="var(--text-muted)" />
             <input
               type="text"
-              placeholder="Rechercher un plat..."
+              placeholder="Rechercher un plat, une boisson..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={searchInputStyle}
@@ -46,84 +60,57 @@ export const AdminMenuSection = ({
           </Button>
         </div>
 
-        {/* Filtres par categorie */}
-        <div style={categoryFilterWrapStyle}>
-          <button
-            type="button"
-            onClick={() => setSelectedCategory('ALL')}
-            style={selectedCategory === 'ALL' ? activeCatStyle : inactiveCatStyle}
-          >
-            Tous ({dishes.length})
-          </button>
-          {categories.map((c) => (
-            <button
-              key={c._id}
-              type="button"
-              onClick={() => setSelectedCategory(c._id)}
-              style={selectedCategory === c._id ? activeCatStyle : inactiveCatStyle}
-            >
-              {c.name}
-            </button>
-          ))}
+        {/* 2. Filtres par Type (Nourriture / Boisson) */}
+        <div style={filtersRowStyle}>
+          <span style={filterLabelStyle}>Type :</span>
+          <div style={filterPillsWrapStyle}>
+            {TYPE_FILTERS.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setSelectedType(t)}
+                style={selectedType === t ? activeFilterStyle : inactiveFilterStyle}
+              >
+                {t === 'TOUS' ? 'Tous les types' : t}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 3. Filtres par Catégorie (Normal, VIP, Spécial) */}
+        <div style={filtersRowStyle}>
+          <span style={filterLabelStyle}>Catégorie :</span>
+          <div style={filterPillsWrapStyle}>
+            {CATEGORY_FILTERS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setSelectedCategory(c)}
+                style={selectedCategory === c ? activeFilterStyle : inactiveFilterStyle}
+              >
+                {c === 'TOUTES' ? 'Toutes les catégories' : c}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* 2. Grille des plats */}
+      {/* 4. Liste des plats filtrés */}
       {filteredDishes.length === 0 ? (
         <div className="card-surface" style={emptyCardStyle}>
-          <p style={emptyTextStyle}>Aucun plat trouvé dans cette sélection.</p>
+          <p style={emptyTextStyle}>Aucun plat ou boisson trouvé avec ces filtres.</p>
         </div>
       ) : (
         <div style={dishesListStyle}>
           {filteredDishes.map((dish) => (
-            <div key={dish._id} className="card-surface" style={dishCardStyle}>
-              <div style={dishImageWrapStyle}>
-                <img
-                  src={dish.image || 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=400&q=80'}
-                  alt={dish.name}
-                  style={dishImageStyle}
-                />
-              </div>
-
-              <div style={dishInfoStyle}>
-                <div style={dishTitleRowStyle}>
-                  <h4 style={dishNameStyle}>{dish.name}</h4>
-                  <strong style={dishPriceStyle}>{formatPrice(dish.price)}</strong>
-                </div>
-
-                <p style={dishDescStyle}>{dish.description}</p>
-
-                <div style={dishFooterStyle}>
-                  <button
-                    type="button"
-                    onClick={() => onToggleAvailability(dish._id, !dish.isAvailable)}
-                    style={dish.isAvailable ? availableBadgeStyle : unavailableBadgeStyle}
-                  >
-                    {dish.isAvailable ? <CheckCircle2 size={13} /> : <XCircle size={13} />}
-                    <span>{dish.isAvailable ? 'Disponible' : 'Épuisé'}</span>
-                  </button>
-
-                  <div style={dishActionsStyle}>
-                    <button
-                      type="button"
-                      onClick={() => onOpenEditDish(dish)}
-                      style={iconBtnStyle}
-                      title="Modifier le plat"
-                    >
-                      <Edit2 size={14} color="var(--color-primary)" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onDeleteDish(dish._id)}
-                      style={iconBtnStyle}
-                      title="Supprimer le plat"
-                    >
-                      <Trash2 size={14} color="var(--status-error)" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <AdminDishCard
+              key={dish._id}
+              dish={dish}
+              onToggleAvailability={onToggleAvailability}
+              onOpenEditDish={onOpenEditDish}
+              onDeleteDish={onDeleteDish}
+              formatPrice={formatPrice}
+            />
           ))}
         </div>
       )}
@@ -171,7 +158,20 @@ const searchInputStyle = {
   color: 'var(--text-primary)'
 };
 
-const categoryFilterWrapStyle = {
+const filtersRowStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px'
+};
+
+const filterLabelStyle = {
+  fontSize: '0.72rem',
+  fontWeight: 700,
+  color: 'var(--text-secondary)',
+  minWidth: '60px'
+};
+
+const filterPillsWrapStyle = {
   display: 'flex',
   gap: '6px',
   overflowX: 'auto',
@@ -179,10 +179,10 @@ const categoryFilterWrapStyle = {
   paddingBottom: '2px'
 };
 
-const baseCatStyle = {
-  padding: '4px 10px',
-  borderRadius: '14px',
-  fontSize: '0.74rem',
+const baseFilterStyle = {
+  padding: '3px 8px',
+  borderRadius: '12px',
+  fontSize: '0.72rem',
   fontWeight: 700,
   whiteSpace: 'nowrap',
   cursor: 'pointer',
@@ -190,14 +190,14 @@ const baseCatStyle = {
   transition: 'all 0.15s ease'
 };
 
-const activeCatStyle = {
-  ...baseCatStyle,
+const activeFilterStyle = {
+  ...baseFilterStyle,
   backgroundColor: 'var(--color-primary)',
   color: '#FFFFFF'
 };
 
-const inactiveCatStyle = {
-  ...baseCatStyle,
+const inactiveFilterStyle = {
+  ...baseFilterStyle,
   backgroundColor: 'var(--bg-card-header)',
   color: 'var(--text-secondary)',
   borderColor: 'var(--border-color)'
@@ -207,110 +207,6 @@ const dishesListStyle = {
   display: 'flex',
   flexDirection: 'column',
   gap: '10px'
-};
-
-const dishCardStyle = {
-  padding: '12px',
-  display: 'flex',
-  gap: '12px',
-  alignItems: 'center'
-};
-
-const dishImageWrapStyle = {
-  width: '74px',
-  height: '74px',
-  borderRadius: '10px',
-  overflow: 'hidden',
-  flexShrink: 0
-};
-
-const dishImageStyle = {
-  width: '100%',
-  height: '100%',
-  objectFit: 'cover'
-};
-
-const dishInfoStyle = {
-  flex: 1,
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '4px'
-};
-
-const dishTitleRowStyle = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center'
-};
-
-const dishNameStyle = {
-  fontSize: '0.88rem',
-  fontWeight: 800,
-  color: 'var(--text-primary)'
-};
-
-const dishPriceStyle = {
-  fontSize: '0.86rem',
-  fontWeight: 800,
-  color: 'var(--color-primary)'
-};
-
-const dishDescStyle = {
-  fontSize: '0.74rem',
-  color: 'var(--text-secondary)',
-  lineHeight: 1.3,
-  display: '-webkit-box',
-  WebkitLineClamp: 2,
-  WebkitBoxOrient: 'vertical',
-  overflow: 'hidden'
-};
-
-const dishFooterStyle = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginTop: '4px'
-};
-
-const badgeBaseStyle = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '4px',
-  padding: '3px 8px',
-  borderRadius: '6px',
-  fontSize: '0.7rem',
-  fontWeight: 700,
-  border: 'none',
-  cursor: 'pointer'
-};
-
-const availableBadgeStyle = {
-  ...badgeBaseStyle,
-  backgroundColor: 'var(--color-accent-surface)',
-  color: 'var(--color-accent-dark)'
-};
-
-const unavailableBadgeStyle = {
-  ...badgeBaseStyle,
-  backgroundColor: 'var(--bg-card-header)',
-  color: 'var(--text-muted)'
-};
-
-const dishActionsStyle = {
-  display: 'flex',
-  gap: '6px'
-};
-
-const iconBtnStyle = {
-  width: '28px',
-  height: '28px',
-  borderRadius: '6px',
-  backgroundColor: 'var(--bg-card-header)',
-  border: '1px solid var(--border-color)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  cursor: 'pointer'
 };
 
 const emptyCardStyle = {

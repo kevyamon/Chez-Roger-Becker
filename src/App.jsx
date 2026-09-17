@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { apiClient } from './services/api';
+import { socket } from './services/socket';
 import { useAuth } from './context/AuthContext';
 import { useCart } from './context/CartContext';
 import { useToast } from './context/ToastContext';
@@ -12,8 +13,7 @@ import { useToast } from './context/ToastContext';
 // Composants Layout & UI
 import { Header } from './components/layout/Header';
 import { TabBar } from './components/layout/TabBar';
-import { Modal } from './components/ui/Modal';
-import { Button } from './components/ui/Button';
+import { DishDetailModal } from './components/menu/DishDetailModal';
 
 // Pages
 import { HomePage } from './pages/public/HomePage';
@@ -30,7 +30,7 @@ import { applyTheme } from './styles/theme';
 export function App() {
   const { isAuthenticated, isAdmin, isDriver } = useAuth();
   const { addItem, setDeliveryFee } = useCart();
-  const { showSuccess } = useToast();
+  const { showSuccess, showInfo } = useToast();
 
   const [activeTab, setActiveTab] = useState(() => {
     const path = window.location.pathname.toLowerCase();
@@ -48,7 +48,7 @@ export function App() {
   const [selectedDishQty, setSelectedDishQty] = useState(1);
   const [trackingToken, setTrackingToken] = useState(() => localStorage.getItem('rb_last_tracking_token'));
 
-  // Initialisation du theme sauvegarde
+  // Initialisation du thème sauvegardé
   useEffect(() => {
     const savedTheme = localStorage.getItem('rb_theme') === 'dark';
     applyTheme(savedTheme);
@@ -80,6 +80,72 @@ export function App() {
     };
 
     fetchInitialData();
+  }, []);
+
+  // Synchronisation temps réel Socket.IO (Public & PWA)
+  useEffect(() => {
+    const onRestaurantUpdate = (upd) => {
+      setRestaurant((prev) => ({ ...prev, ...upd }));
+      if (upd.deliveryFee !== undefined) setDeliveryFee(upd.deliveryFee);
+    };
+
+    const onDishCreated = (dish) => setDishes((prev) => [dish, ...prev.filter((d) => d._id !== dish._id)]);
+    const onDishUpdated = (dish) => {
+      setDishes((prev) => prev.map((d) => (d._id === dish._id ? { ...d, ...dish } : d)));
+      setSelectedDish((prev) => (prev && prev._id === dish._id ? { ...prev, ...dish } : prev));
+    };
+    const onDishDeleted = ({ dishId }) => {
+      setDishes((prev) => prev.filter((d) => d._id !== dishId));
+      setSelectedDish((prev) => (prev && prev._id === dishId ? null : prev));
+    };
+
+    const onCatCreated = (cat) => setCategories((prev) => [...prev.filter((c) => c._id !== cat._id), cat]);
+    const onCatUpdated = (cat) => setCategories((prev) => prev.map((c) => (c._id === cat._id ? { ...c, ...cat } : c)));
+    const onCatDeleted = ({ categoryId }) => setCategories((prev) => prev.filter((c) => c._id !== categoryId));
+
+    const onPromoCreated = (p) => setPromotions((prev) => [p, ...prev.filter((item) => item._id !== p._id)]);
+    const onPromoUpdated = (p) => setPromotions((prev) => prev.map((item) => (item._id === p._id ? { ...item, ...p } : item)));
+    const onPromoDeleted = ({ promoId }) => setPromotions((prev) => prev.filter((item) => item._id !== promoId));
+
+    const onOrderStatus = (data) => {
+      try {
+        const history = JSON.parse(localStorage.getItem('rb_orders_history') || '[]');
+        const match = history.find((o) => o.trackingToken === data.trackingToken || o.orderNumber === data.orderNumber);
+        if (match) {
+          const updated = history.map((o) => (o.trackingToken === data.trackingToken || o.orderNumber === data.orderNumber ? { ...o, status: data.status } : o));
+          localStorage.setItem('rb_orders_history', JSON.stringify(updated));
+          showInfo(`Votre commande #${data.orderNumber || match.orderNumber} : ${data.status}`);
+        }
+      } catch {
+        // Ignorer erreur JSON
+      }
+    };
+
+    socket.on('restaurant:updated', onRestaurantUpdate);
+    socket.on('dish:created', onDishCreated);
+    socket.on('dish:updated', onDishUpdated);
+    socket.on('dish:deleted', onDishDeleted);
+    socket.on('category:created', onCatCreated);
+    socket.on('category:updated', onCatUpdated);
+    socket.on('category:deleted', onCatDeleted);
+    socket.on('promotion:created', onPromoCreated);
+    socket.on('promotion:updated', onPromoUpdated);
+    socket.on('promotion:deleted', onPromoDeleted);
+    socket.on('order:status-changed', onOrderStatus);
+
+    return () => {
+      socket.off('restaurant:updated', onRestaurantUpdate);
+      socket.off('dish:created', onDishCreated);
+      socket.off('dish:updated', onDishUpdated);
+      socket.off('dish:deleted', onDishDeleted);
+      socket.off('category:created', onCatCreated);
+      socket.off('category:updated', onCatUpdated);
+      socket.off('category:deleted', onCatDeleted);
+      socket.off('promotion:created', onPromoCreated);
+      socket.off('promotion:updated', onPromoUpdated);
+      socket.off('promotion:deleted', onPromoDeleted);
+      socket.off('order:status-changed', onOrderStatus);
+    };
   }, []);
 
   const handleSelectDish = (dish) => {
@@ -155,59 +221,14 @@ export function App() {
         <TabBar activeTab={activeTab} onSelectTab={setActiveTab} />
       )}
 
-      {/* MODALE DE DÉTAIL DU PLAT */}
-      {selectedDish && (
-        <Modal
-          isOpen={Boolean(selectedDish)}
-          onClose={() => setSelectedDish(null)}
-          title={selectedDish.name}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <img
-              src={selectedDish.image}
-              alt={selectedDish.name}
-              style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '14px' }}
-            />
-            <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              {selectedDish.description}
-            </p>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-primary)' }}>
-                {((selectedDish.promotionalPrice || selectedDish.price) * selectedDishQty).toLocaleString('fr-FR')} FCFA
-              </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <button
-                  onClick={() => setSelectedDishQty((q) => Math.max(1, q - 1))}
-                  style={modalQtyBtnStyle}
-                >
-                  -
-                </button>
-                <span style={{ fontWeight: 800 }}>{selectedDishQty}</span>
-                <button
-                  onClick={() => setSelectedDishQty((q) => q + 1)}
-                  style={modalQtyBtnStyle}
-                >
-                  +
-                </button>
-              </div>
-            </div>
-            <Button variant="primary" size="lg" fullWidth onClick={handleAddModalDish}>
-              Ajouter au panier
-            </Button>
-          </div>
-        </Modal>
-      )}
+      <DishDetailModal
+        dish={selectedDish}
+        quantity={selectedDishQty}
+        onClose={() => setSelectedDish(null)}
+        onChangeQuantity={setSelectedDishQty}
+        onAddToCart={handleAddModalDish}
+      />
     </div>
   );
 }
 
-const modalQtyBtnStyle = {
-  width: '32px',
-  height: '32px',
-  borderRadius: '8px',
-  border: '1px solid var(--border-color)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  fontWeight: 800
-};

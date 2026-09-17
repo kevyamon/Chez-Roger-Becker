@@ -1,5 +1,6 @@
 /**
- * Filtre horizontal par categories sous forme de pilules interactives.
+ * Filtre horizontal par catégories sous forme de pilules interactives.
+ * Compatible avec les listes de chaînes ou d'objets de catégories.
  */
 
 import React from 'react';
@@ -8,27 +9,32 @@ export const CategoryFilter = ({ categories = [], selectedCategory, onSelectCate
   return (
     <div style={containerStyle}>
       <button
+        type="button"
         onClick={() => onSelectCategory(null)}
         style={{
           ...pillStyle,
           ...(selectedCategory === null ? activePillStyle : inactivePillStyle)
         }}
       >
-        Tous les plats
+        Toutes les catégories
       </button>
 
       {categories.map((cat) => {
-        const isSelected = selectedCategory === cat._id;
+        const catKey = typeof cat === 'string' ? cat : cat._id || cat.name;
+        const catLabel = typeof cat === 'string' ? cat : cat.name;
+        const isSelected = selectedCategory === catKey || selectedCategory === catLabel;
+
         return (
           <button
-            key={cat._id}
-            onClick={() => onSelectCategory(cat._id)}
+            key={catKey}
+            type="button"
+            onClick={() => onSelectCategory(catKey)}
             style={{
               ...pillStyle,
               ...(isSelected ? activePillStyle : inactivePillStyle)
             }}
           >
-            {cat.name}
+            {catLabel}
           </button>
         );
       })}
@@ -41,7 +47,7 @@ const containerStyle = {
   alignItems: 'center',
   gap: '8px',
   overflowX: 'auto',
-  padding: '8px 16px',
+  padding: '6px 16px',
   scrollbarWidth: 'none',
   msOverflowStyle: 'none',
   WebkitOverflowScrolling: 'touch'
@@ -49,12 +55,13 @@ const containerStyle = {
 
 const pillStyle = {
   whiteSpace: 'nowrap',
-  padding: '8px 16px',
+  padding: '6px 14px',
   borderRadius: '9999px',
-  fontSize: '0.84rem',
+  fontSize: '0.80rem',
   fontWeight: 700,
   transition: 'all 0.2s ease',
-  flexShrink: 0
+  flexShrink: 0,
+  cursor: 'pointer'
 };
 
 const activePillStyle = {

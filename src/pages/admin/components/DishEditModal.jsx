@@ -1,12 +1,15 @@
 /**
- * Modale de creation et d'edition de plat (DishEditModal).
- * Formulaire mobile-first avec validation des champs.
+ * Modale de création et d'édition de plat (DishEditModal).
+ * Formulaire mobile-first avec catégories pré-configurées, type (Nourriture/Boisson) et validation.
  */
 
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../../../components/ui/Modal';
 import { Button } from '../../../components/ui/Button';
 import { Save } from 'lucide-react';
+
+const CATEGORY_OPTIONS = ['Normal', 'VIP', 'Spécial'];
+const TYPE_OPTIONS = ['Nourriture', 'Boisson'];
 
 export const DishEditModal = ({
   isOpen,
@@ -20,7 +23,8 @@ export const DishEditModal = ({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
-  const [categoryId, setCategoryId] = useState('');
+  const [type, setType] = useState('Nourriture');
+  const [category, setCategory] = useState('Normal');
   const [image, setImage] = useState('');
   const [preparationTime, setPreparationTime] = useState('20');
   const [isFeatured, setIsFeatured] = useState(false);
@@ -31,7 +35,8 @@ export const DishEditModal = ({
       setName(dish.name || '');
       setDescription(dish.description || '');
       setPrice(dish.price ? String(dish.price) : '');
-      setCategoryId(dish.categoryId?._id || dish.categoryId || (categories[0]?._id || ''));
+      setType(dish.type || 'Nourriture');
+      setCategory(dish.category || dish.categoryId?.name || 'Normal');
       setImage(dish.image || '');
       setPreparationTime(dish.preparationTime ? String(dish.preparationTime) : '20');
       setIsFeatured(Boolean(dish.isFeatured));
@@ -40,7 +45,8 @@ export const DishEditModal = ({
       setName('');
       setDescription('');
       setPrice('');
-      setCategoryId(categories[0]?._id || '');
+      setType('Nourriture');
+      setCategory('Normal');
       setImage('');
       setPreparationTime('20');
       setIsFeatured(false);
@@ -50,14 +56,21 @@ export const DishEditModal = ({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!name.trim() || !price || !categoryId) return;
+    if (!name.trim() || !price || !category || !type) return;
+
+    // Association automatique avec un categoryId existant si disponible
+    const matchedCategory = categories.find(
+      (c) => c.name?.toLowerCase() === category.toLowerCase()
+    );
 
     onSaveDish({
       ...(dish?._id ? { _id: dish._id } : {}),
       name: name.trim(),
       description: description.trim(),
       price: Number(price),
-      categoryId,
+      type,
+      category,
+      ...(matchedCategory?._id ? { categoryId: matchedCategory._id } : {}),
       image: image.trim(),
       preparationTime: Number(preparationTime) || 20,
       isFeatured,
@@ -86,7 +99,7 @@ export const DishEditModal = ({
           />
         </div>
 
-        <div style={twoColsStyle}>
+        <div style={threeColsStyle}>
           <div style={fieldGroupStyle}>
             <label style={labelStyle}>Prix (FCFA) *</label>
             <input
@@ -101,16 +114,32 @@ export const DishEditModal = ({
           </div>
 
           <div style={fieldGroupStyle}>
-            <label style={labelStyle}>Catégorie *</label>
+            <label style={labelStyle}>Type *</label>
             <select
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
+              value={type}
+              onChange={(e) => setType(e.target.value)}
               required
               style={inputStyle}
             >
-              {categories.map((c) => (
-                <option key={c._id} value={c._id}>
-                  {c.name}
+              {TYPE_OPTIONS.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div style={fieldGroupStyle}>
+            <label style={labelStyle}>Catégorie *</label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              required
+              style={inputStyle}
+            >
+              {CATEGORY_OPTIONS.map((c) => (
+                <option key={c} value={c}>
+                  {c}
                 </option>
               ))}
             </select>
@@ -145,6 +174,7 @@ export const DishEditModal = ({
               type="checkbox"
               checked={isFeatured}
               onChange={(e) => setIsFeatured(e.target.checked)}
+              style={checkboxInputStyle}
             />
             <span>Mettre en avant sur l'accueil</span>
           </label>
@@ -154,6 +184,7 @@ export const DishEditModal = ({
               type="checkbox"
               checked={isAvailable}
               onChange={(e) => setIsAvailable(e.target.checked)}
+              style={checkboxInputStyle}
             />
             <span>Disponible à la commande</span>
           </label>
@@ -197,7 +228,8 @@ const inputStyle = {
   backgroundColor: 'var(--bg-elevated)',
   color: 'var(--text-primary)',
   fontSize: '0.84rem',
-  outline: 'none'
+  outline: 'none',
+  width: '100%'
 };
 
 const textareaStyle = {
@@ -206,26 +238,37 @@ const textareaStyle = {
   fontFamily: 'inherit'
 };
 
-const twoColsStyle = {
+const threeColsStyle = {
   display: 'grid',
-  gridTemplateColumns: '1fr 1fr',
+  gridTemplateColumns: '1fr 1fr 1fr',
   gap: '10px'
 };
 
 const checkboxesRowStyle = {
   display: 'flex',
   flexDirection: 'column',
-  gap: '8px',
-  padding: '8px 0'
+  gap: '10px',
+  padding: '6px 0'
 };
 
 const checkboxLabelStyle = {
-  display: 'flex',
+  display: 'inline-flex',
   alignItems: 'center',
-  gap: '8px',
+  gap: '10px',
   fontSize: '0.82rem',
   color: 'var(--text-primary)',
-  cursor: 'pointer'
+  cursor: 'pointer',
+  userSelect: 'none'
+};
+
+const checkboxInputStyle = {
+  width: '18px',
+  height: '18px',
+  margin: 0,
+  padding: 0,
+  accentColor: 'var(--color-primary)',
+  cursor: 'pointer',
+  flexShrink: 0
 };
 
 const footerStyle = {
@@ -234,3 +277,4 @@ const footerStyle = {
   gap: '8px',
   marginTop: '8px'
 };
+

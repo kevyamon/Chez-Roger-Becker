@@ -4,12 +4,12 @@
  */
 
 import React, { useState } from 'react';
-import { User, Phone, MapPin, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { User, Phone, MapPin, ArrowLeft } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useToast } from '../../context/ToastContext';
 import { apiClient } from '../../services/api';
 import { MapPicker } from '../../components/map/MapPicker';
-import { Button } from '../../components/ui/Button';
+import { CheckoutSummaryCard } from './components/CheckoutSummaryCard';
 
 export const CheckoutPage = ({ onNavigate, onOrderSuccess }) => {
   const { items, subtotal, deliveryFee, total, clearCart } = useCart();
@@ -172,39 +172,13 @@ export const CheckoutPage = ({ onNavigate, onOrderSuccess }) => {
         </div>
 
         {/* ÉTAPE 3 : RÉCAPITULATIF FINANCIER & PAIEMENT */}
-        <div className="card-surface" style={cardStyle}>
-          <h3 style={sectionHeadingStyle}>3. Paiement à la livraison</h3>
-          <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
-            Vous réglerez le montant total en espèces ou par Mobile Money lors de la réception de votre repas.
-          </p>
-
-          <div style={totalBreakdownStyle}>
-            <div style={rowStyle}>
-              <span>Sous-total ({items.length} articles)</span>
-              <span>{subtotal.toLocaleString('fr-FR')} FCFA</span>
-            </div>
-            <div style={rowStyle}>
-              <span>Frais de livraison</span>
-              <span>{deliveryFee.toLocaleString('fr-FR')} FCFA</span>
-            </div>
-            <div style={{ ...rowStyle, ...grandTotalRowStyle }}>
-              <span>Total à payer</span>
-              <span style={grandTotalPriceStyle}>{total.toLocaleString('fr-FR')} FCFA</span>
-            </div>
-          </div>
-
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            fullWidth
-            isLoading={isSubmitting}
-            icon={CheckCircle2}
-            style={{ marginTop: '16px' }}
-          >
-            Confirmer ma commande ({total.toLocaleString('fr-FR')} FCFA)
-          </Button>
-        </div>
+        <CheckoutSummaryCard
+          itemsCount={items.length}
+          subtotal={subtotal}
+          deliveryFee={deliveryFee}
+          total={total}
+          isSubmitting={isSubmitting}
+        />
       </form>
     </div>
   );
@@ -273,31 +247,3 @@ const labelStyle = {
   color: 'var(--text-secondary)'
 };
 
-const totalBreakdownStyle = {
-  borderTop: '1px solid var(--border-color)',
-  paddingTop: '12px',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '8px',
-  marginTop: '6px'
-};
-
-const rowStyle = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  fontSize: '0.86rem',
-  color: 'var(--text-secondary)'
-};
-
-const grandTotalRowStyle = {
-  borderTop: '1px dashed var(--border-color)',
-  paddingTop: '10px',
-  fontWeight: 800,
-  fontSize: '1.05rem',
-  color: 'var(--text-primary)'
-};
-
-const grandTotalPriceStyle = {
-  color: 'var(--color-primary)',
-  fontSize: '1.18rem'
-};
