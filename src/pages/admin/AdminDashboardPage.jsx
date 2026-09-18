@@ -12,6 +12,7 @@ import { AdminTabBar } from './components/AdminTabBar';
 import { AdminSectionRouter } from './components/AdminSectionRouter';
 import { AdminOrderDetailsModal } from './components/AdminOrderDetailsModal';
 import { DishEditModal } from './components/DishEditModal';
+import { NotificationPermissionBanner } from '../../components/ui/NotificationPermissionBanner';
 
 export const AdminDashboardPage = () => {
   const [activeSection, setActiveSection] = useState('kpis');
@@ -36,42 +37,47 @@ export const AdminDashboardPage = () => {
   }, []);
 
   return (
-    <div className="animate-fade-in" style={containerStyle}>
-      <AdminHeader
-        restaurantSettings={adminData.settings}
-        isDark={isDark}
-        onToggleTheme={handleToggleTheme}
-        onToggleStoreStatus={adminData.toggleStoreStatus}
-        isUpdatingStore={adminData.isUpdatingStore}
-      />
-
-      <main style={{ minHeight: '50vh' }}>
-        <AdminSectionRouter
-          activeSection={activeSection}
-          dashboardData={adminData.dashboardData}
-          orders={adminData.orders}
-          dishes={adminData.dishes}
-          categories={adminData.categories}
-          drivers={adminData.drivers}
-          auditLogs={adminData.auditLogs}
-          settings={adminData.settings}
-          isLoading={adminData.isLoading}
-          onSelectOrder={(ord) => setSelectedOrder(ord)}
-          onUpdateOrderStatus={adminData.updateOrderStatus}
-          onOpenCreateDish={() => {
-            setSelectedDish(null);
-            setIsDishModalOpen(true);
-          }}
-          onOpenEditDish={(d) => {
-            setSelectedDish(d);
-            setIsDishModalOpen(true);
-          }}
-          onToggleAvailability={adminData.toggleDishAvailability}
-          onDeleteDish={adminData.deleteDish}
-          onCreateDriver={adminData.createDriver}
-          onSaveSettings={adminData.saveSettings}
+    <div style={containerStyle}>
+      <div className="animate-fade-in" style={contentWrapperStyle}>
+        <AdminHeader
+          restaurantSettings={adminData.settings}
+          isDark={isDark}
+          onToggleTheme={handleToggleTheme}
+          onToggleStoreStatus={adminData.toggleStoreStatus}
+          isUpdatingStore={adminData.isUpdatingStore}
         />
-      </main>
+
+        {/* Bannière de notifications push pour l'administration */}
+        <NotificationPermissionBanner role="ADMIN" />
+
+        <main style={{ minHeight: '50vh' }}>
+          <AdminSectionRouter
+            activeSection={activeSection}
+            dashboardData={adminData.dashboardData}
+            orders={adminData.orders}
+            dishes={adminData.dishes}
+            categories={adminData.categories}
+            drivers={adminData.drivers}
+            auditLogs={adminData.auditLogs}
+            settings={adminData.settings}
+            isLoading={adminData.isLoading}
+            onSelectOrder={(ord) => setSelectedOrder(ord)}
+            onUpdateOrderStatus={adminData.updateOrderStatus}
+            onOpenCreateDish={() => {
+              setSelectedDish(null);
+              setIsDishModalOpen(true);
+            }}
+            onOpenEditDish={(d) => {
+              setSelectedDish(d);
+              setIsDishModalOpen(true);
+            }}
+            onToggleAvailability={adminData.toggleDishAvailability}
+            onDeleteDish={adminData.deleteDish}
+            onCreateDriver={adminData.createDriver}
+            onSaveSettings={adminData.saveSettings}
+          />
+        </main>
+      </div>
 
       <AdminTabBar
         activeSection={activeSection}
@@ -105,9 +111,18 @@ const containerStyle = {
   display: 'flex',
   flexDirection: 'column',
   gap: '14px',
-  paddingBottom: '90px',
+  paddingBottom: 'calc(100px + env(safe-area-inset-bottom, 0px))',
   maxWidth: '720px',
-  margin: '0 auto'
+  margin: '0 auto',
+  width: '100%',
+  position: 'relative'
+};
+
+const contentWrapperStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '14px',
+  width: '100%'
 };
 
 

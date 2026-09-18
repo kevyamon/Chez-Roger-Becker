@@ -1,10 +1,11 @@
 /**
  * Section KPIs & Statistiques Administrateur (AdminKpiSection).
- * Synthese financiere 2x2 et repartition des commandes en cartes colorees (3 en haut, 2 en bas).
+ * Priorise la répartition opérationnelle des commandes avec volet repliable pour les revenus.
  */
 
 import React from 'react';
-import { DollarSign, ShoppingBag, Clock, TrendingUp, Hourglass, ChefHat, Bike, CheckCircle2, XCircle } from 'lucide-react';
+import { Hourglass, ChefHat, Bike, CheckCircle2, XCircle } from 'lucide-react';
+import { RevenueKpisCollapse } from './RevenueKpisCollapse';
 
 export const AdminKpiSection = ({ dashboardData, onSelectOrder }) => {
   const kpi = dashboardData?.kpi || {};
@@ -21,50 +22,7 @@ export const AdminKpiSection = ({ dashboardData, onSelectOrder }) => {
 
   return (
     <div style={sectionContainerStyle}>
-      {/* 1. Cartes de Revenus & Volume - Grille 2x2 symétrique */}
-      <div style={grid2x2Style}>
-        <div className="card-surface" style={kpiCardStyle}>
-          <div style={kpiIconWrapStyle('var(--color-primary-surface)', 'var(--color-primary)')}>
-            <DollarSign size={20} />
-          </div>
-          <div style={kpiContentStyle}>
-            <span style={kpiLabelStyle}>Revenus du Jour</span>
-            <h3 style={kpiValueStyle}>{formatPrice(kpi.revenueToday)}</h3>
-          </div>
-        </div>
-
-        <div className="card-surface" style={kpiCardStyle}>
-          <div style={kpiIconWrapStyle('var(--color-secondary-surface)', 'var(--color-secondary)')}>
-            <TrendingUp size={20} />
-          </div>
-          <div style={kpiContentStyle}>
-            <span style={kpiLabelStyle}>Revenus Semaine</span>
-            <h3 style={kpiValueStyle}>{formatPrice(kpi.revenueWeek)}</h3>
-          </div>
-        </div>
-
-        <div className="card-surface" style={kpiCardStyle}>
-          <div style={kpiIconWrapStyle('var(--color-accent-surface)', 'var(--color-accent)')}>
-            <ShoppingBag size={20} />
-          </div>
-          <div style={kpiContentStyle}>
-            <span style={kpiLabelStyle}>Commandes du Jour</span>
-            <h3 style={kpiValueStyle}>{kpi.ordersToday || 0}</h3>
-          </div>
-        </div>
-
-        <div className="card-surface" style={kpiCardStyle}>
-          <div style={kpiIconWrapStyle('var(--bg-card-header)', 'var(--text-primary)')}>
-            <Clock size={20} />
-          </div>
-          <div style={kpiContentStyle}>
-            <span style={kpiLabelStyle}>En Cours</span>
-            <h3 style={kpiValueStyle}>{(kpi.preparingCount || 0) + (kpi.inDeliveryCount || 0)}</h3>
-          </div>
-        </div>
-      </div>
-
-      {/* 2. Répartition des statuts - 3 en haut, 2 en bas avec fond coloré */}
+      {/* 1. Priorité N°1 : Répartition des statuts des commandes en cours */}
       <div className="card-surface" style={statusSectionCardStyle}>
         <h4 style={sectionTitleStyle}>Répartition des Commandes</h4>
         <div style={statusGridStyle}>
@@ -92,7 +50,10 @@ export const AdminKpiSection = ({ dashboardData, onSelectOrder }) => {
         </div>
       </div>
 
-      {/* 3. Dernières Commandes Reçues */}
+      {/* 2. Volet repliable haute visibilité "Mes revenus" */}
+      <RevenueKpisCollapse kpi={kpi} />
+
+      {/* 3. Activité Récente (Dernières Commandes) */}
       <div className="card-surface" style={recentOrdersCardStyle}>
         <h4 style={sectionTitleStyle}>Activité Récente</h4>
         {recentOrders.length === 0 ? (
@@ -126,49 +87,6 @@ const sectionContainerStyle = {
   display: 'flex',
   flexDirection: 'column',
   gap: '14px'
-};
-
-const grid2x2Style = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(2, 1fr)',
-  gap: '12px'
-};
-
-const kpiCardStyle = {
-  padding: '14px',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '10px'
-};
-
-const kpiContentStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '2px'
-};
-
-const kpiIconWrapStyle = (bg, color) => ({
-  width: '38px',
-  height: '38px',
-  borderRadius: '10px',
-  backgroundColor: bg,
-  color: color,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center'
-});
-
-const kpiLabelStyle = {
-  fontSize: '0.74rem',
-  fontWeight: 600,
-  color: 'var(--text-secondary)'
-};
-
-const kpiValueStyle = {
-  fontSize: '1rem',
-  fontWeight: 800,
-  color: 'var(--text-primary)',
-  lineHeight: 1.2
 };
 
 const statusSectionCardStyle = {

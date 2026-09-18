@@ -4,9 +4,10 @@
  */
 
 import React, { useState } from 'react';
-import { User, Phone, MapPin, ArrowLeft } from 'lucide-react';
+import { User, MapPin, ArrowLeft } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useToast } from '../../context/ToastContext';
+import { usePushNotification } from '../../context/PushNotificationContext';
 import { apiClient } from '../../services/api';
 import { MapPicker } from '../../components/map/MapPicker';
 import { CheckoutSummaryCard } from './components/CheckoutSummaryCard';
@@ -14,6 +15,7 @@ import { CheckoutSummaryCard } from './components/CheckoutSummaryCard';
 export const CheckoutPage = ({ onNavigate, onOrderSuccess }) => {
   const { items, subtotal, deliveryFee, total, clearCart } = useCart();
   const { showError, showSuccess } = useToast();
+  const { linkOrderToPush } = usePushNotification();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -88,6 +90,11 @@ export const CheckoutPage = ({ onNavigate, onOrderSuccess }) => {
           console.warn('Erreur de sauvegarde locale de la commande:', e);
         }
 
+        // Association automatique du push pour les alertes de cette commande
+        if (createdOrder.trackingToken) {
+          linkOrderToPush(createdOrder.trackingToken);
+        }
+
         clearCart();
         showSuccess('Votre commande a été enregistrée avec succès !');
         if (onOrderSuccess) {
@@ -95,7 +102,11 @@ export const CheckoutPage = ({ onNavigate, onOrderSuccess }) => {
         }
       }
     } catch (err) {
-      showError(err.message || 'Échec lors de la création de la commande.');
+      if (err.code === 'RESTAURANT_CLOSED' || err.message?.toLowerCase()?.includes('fermé')) {
+        showError('La commande n\'est pas possible actuellement car le restaurant est fermé.');
+      } else {
+        showError(err.message || 'Échec lors de la création de la commande.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -246,4 +257,3 @@ const labelStyle = {
   fontWeight: 700,
   color: 'var(--text-secondary)'
 };
-

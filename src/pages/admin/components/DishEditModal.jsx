@@ -1,12 +1,15 @@
 /**
  * Modale de création et d'édition de plat (DishEditModal).
- * Formulaire mobile-first avec catégories pré-configurées, type (Nourriture/Boisson) et validation.
+ * Sélection d'image depuis la galerie avec téléversement Cloudinary et sélecteurs sur-mesure.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Image as ImageIcon, UploadCloud, Trash2, Save, RefreshCw } from 'lucide-react';
 import { Modal } from '../../../components/ui/Modal';
 import { Button } from '../../../components/ui/Button';
-import { Save } from 'lucide-react';
+import { CustomSelect } from '../../../components/ui/CustomSelect';
+import { apiClient } from '../../../services/api';
+import { useToast } from '../../../context/ToastContext';
 
 const CATEGORY_OPTIONS = ['Normal', 'VIP', 'Spécial'];
 const TYPE_OPTIONS = ['Nourriture', 'Boisson'];
@@ -18,6 +21,8 @@ export const DishEditModal = ({
   categories = [],
   onSaveDish
 }) => {
+  const { showError, showSuccess } = useToast();
+  const fileInputRef = useRef(null);
   const isEditing = Boolean(dish?._id);
 
   const [name, setName] = useState('');
@@ -26,6 +31,7 @@ export const DishEditModal = ({
   const [type, setType] = useState('Nourriture');
   const [category, setCategory] = useState('Normal');
   const [image, setImage] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
   const [preparationTime, setPreparationTime] = useState('20');
   const [isFeatured, setIsFeatured] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
@@ -54,11 +60,40 @@ export const DishEditModal = ({
     }
   }, [dish, categories, isOpen]);
 
+  const handleImageFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showError('Veuillez sélectionner un fichier image valide.');
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const res = await apiClient.post('/admin/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      if (res.success && res.data?.url) {
+        setImage(res.data.url);
+        showSuccess('Image téléversée avec succès sur Cloudinary.');
+      }
+    } catch (err) {
+      showError(err.message || 'Échec du téléversement de la photo.');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!name.trim() || !price || !category || !type) return;
 
-    // Association automatique avec un categoryId existant si disponible
     const matchedCategory = categories.find(
       (c) => c.name?.toLowerCase() === category.toLowerCase()
     );
@@ -113,37 +148,21 @@ export const DishEditModal = ({
             />
           </div>
 
-          <div style={fieldGroupStyle}>
-            <label style={labelStyle}>Type *</label>
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-              required
-              style={inputStyle}
-            >
-              {TYPE_OPTIONS.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </div>
+          <CustomSelect
+            label="Type"
+            value={type}
+            onChange={setType}
+            options={TYPE_OPTIONS}
+            required
+          />
 
-          <div style={fieldGroupStyle}>
-            <label style={labelStyle}>Catégorie *</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              required
-              style={inputStyle}
-            >
-              {CATEGORY_OPTIONS.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </div>
+          <CustomSelect
+            label="Catégorie"
+            value={category}
+            onChange={setCategory}
+            options={CATEGORY_OPTIONS}
+            required
+          />
         </div>
 
         <div style={fieldGroupStyle}>
@@ -152,20 +171,67 @@ export const DishEditModal = ({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Description détaillée du plat..."
-            rows={3}
+            rows={2}
             style={textareaStyle}
           />
         </div>
 
+        {/* SÉLECTEUR D'IMAGE GALERIE CLOUDINARY */}
         <div style={fieldGroupStyle}>
-          <label style={labelStyle}>URL de la photo</label>
+          <label style={labelStyle}>Photo du plat (depuis la galerie) *</label>
           <input
-            type="url"
-            value={image}
-            onChange={(e) => setImage(e.target.value)}
-            placeholder="https://..."
-            style={inputStyle}
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImageFileChange}
+            accept="image/*"
+            style={{ display: 'none' }}
           />
+
+          {image ? (
+            <div style={imagePreviewContainerStyle}>
+              <img src={image} alt="Aperçu du plat" style={imagePreviewStyle} />
+              <div style={imageActionsStyle}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  icon={UploadCloud}
+                >
+                  {isUploading ? 'Téléversement...' : 'Changer la photo'}
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => setImage('')}
+                  style={removeImageBtnStyle}
+                  title="Retirer la photo"
+                >
+                  <Trash2 size={16} color="var(--status-error)" />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              style={uploadPlaceholderStyle}
+            >
+              {isUploading ? (
+                <div style={uploadingInnerStyle}>
+                  <RefreshCw size={24} color="var(--color-primary)" className="animate-spin" />
+                  <span style={uploadingTextStyle}>Téléversement en cours sur Cloudinary...</span>
+                </div>
+              ) : (
+                <div style={uploadingInnerStyle}>
+                  <ImageIcon size={28} color="var(--color-primary)" />
+                  <span style={uploadTitleStyle}>Sélectionner une photo depuis la galerie</span>
+                  <span style={uploadSubtitleStyle}>Formats JPEG, PNG, WEBP acceptés</span>
+                </div>
+              )}
+            </button>
+          )}
         </div>
 
         <div style={checkboxesRowStyle}>
@@ -194,7 +260,7 @@ export const DishEditModal = ({
           <Button variant="secondary" size="md" type="button" onClick={onClose}>
             Annuler
           </Button>
-          <Button variant="primary" size="md" type="submit" icon={Save}>
+          <Button variant="primary" size="md" type="submit" icon={Save} disabled={isUploading}>
             {isEditing ? 'Mettre à jour' : 'Créer le plat'}
           </Button>
         </div>
@@ -203,78 +269,25 @@ export const DishEditModal = ({
   );
 };
 
-const formStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '12px'
-};
+const formStyle = { display: 'flex', flexDirection: 'column', gap: '10px' };
+const fieldGroupStyle = { display: 'flex', flexDirection: 'column', gap: '4px' };
+const labelStyle = { fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)' };
+const inputStyle = { padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-elevated)', color: 'var(--text-primary)', fontSize: '0.84rem', outline: 'none', width: '100%' };
+const textareaStyle = { ...inputStyle, resize: 'vertical', fontFamily: 'inherit' };
+const threeColsStyle = { display: 'grid', gridTemplateColumns: '1.1fr 1fr 1fr', gap: '8px' };
 
-const fieldGroupStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '4px'
-};
+const imagePreviewContainerStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px', borderRadius: '10px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-elevated)' };
+const imagePreviewStyle = { width: '64px', height: '64px', objectFit: 'cover', borderRadius: '8px' };
+const imageActionsStyle = { display: 'flex', alignItems: 'center', gap: '8px' };
+const removeImageBtnStyle = { background: 'none', border: 'none', cursor: 'pointer', padding: '6px' };
 
-const labelStyle = {
-  fontSize: '0.78rem',
-  fontWeight: 700,
-  color: 'var(--text-secondary)'
-};
+const uploadPlaceholderStyle = { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px', borderRadius: '10px', border: '1.5px dashed var(--border-color)', backgroundColor: 'var(--bg-elevated)', cursor: 'pointer', width: '100%' };
+const uploadingInnerStyle = { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' };
+const uploadTitleStyle = { fontSize: '0.84rem', fontWeight: 700, color: 'var(--color-primary)' };
+const uploadSubtitleStyle = { fontSize: '0.72rem', color: 'var(--text-muted)' };
+const uploadingTextStyle = { fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' };
 
-const inputStyle = {
-  padding: '8px 12px',
-  borderRadius: '8px',
-  border: '1px solid var(--border-color)',
-  backgroundColor: 'var(--bg-elevated)',
-  color: 'var(--text-primary)',
-  fontSize: '0.84rem',
-  outline: 'none',
-  width: '100%'
-};
-
-const textareaStyle = {
-  ...inputStyle,
-  resize: 'vertical',
-  fontFamily: 'inherit'
-};
-
-const threeColsStyle = {
-  display: 'grid',
-  gridTemplateColumns: '1fr 1fr 1fr',
-  gap: '10px'
-};
-
-const checkboxesRowStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '10px',
-  padding: '6px 0'
-};
-
-const checkboxLabelStyle = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '10px',
-  fontSize: '0.82rem',
-  color: 'var(--text-primary)',
-  cursor: 'pointer',
-  userSelect: 'none'
-};
-
-const checkboxInputStyle = {
-  width: '18px',
-  height: '18px',
-  margin: 0,
-  padding: 0,
-  accentColor: 'var(--color-primary)',
-  cursor: 'pointer',
-  flexShrink: 0
-};
-
-const footerStyle = {
-  display: 'flex',
-  justifyContent: 'flex-end',
-  gap: '8px',
-  marginTop: '8px'
-};
-
+const checkboxesRowStyle = { display: 'flex', flexDirection: 'column', gap: '8px', padding: '4px 0' };
+const checkboxLabelStyle = { display: 'inline-flex', alignItems: 'center', gap: '10px', fontSize: '0.82rem', color: 'var(--text-primary)', cursor: 'pointer', userSelect: 'none' };
+const checkboxInputStyle = { width: '18px', height: '18px', margin: 0, padding: 0, accentColor: 'var(--color-primary)', cursor: 'pointer', flexShrink: 0 };
+const footerStyle = { display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '6px' };

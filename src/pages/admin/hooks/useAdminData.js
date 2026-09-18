@@ -96,10 +96,10 @@ export const useAdminData = () => {
     if (!settings) return;
     try {
       setIsUpdatingStore(true);
-      const newStatus = !settings.isOpen;
+      const newStatus = settings.isOpen === false;
       const res = await apiClient.patch('/admin/settings', { isOpen: newStatus });
       if (res.success) {
-        setSettings({ ...settings, isOpen: newStatus });
+        setSettings(res.data?.settings || res.data);
         showSuccess(`Le restaurant est désormais ${newStatus ? 'Ouvert aux commandes' : 'Fermé'}.`);
       }
     } catch (err) {

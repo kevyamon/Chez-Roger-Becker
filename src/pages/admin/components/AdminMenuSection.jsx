@@ -49,7 +49,7 @@ export const AdminMenuSection = ({
             <Search size={16} color="var(--text-muted)" />
             <input
               type="text"
-              placeholder="Rechercher un plat, une boisson..."
+              placeholder="Rechercher..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={searchInputStyle}
@@ -140,6 +140,7 @@ const topActionsRowStyle = {
 
 const searchWrapStyle = {
   flex: 1,
+  minWidth: 0,
   display: 'flex',
   alignItems: 'center',
   gap: '8px',
@@ -153,6 +154,7 @@ const searchInputStyle = {
   border: 'none',
   background: 'transparent',
   width: '100%',
+  minWidth: 0,
   outline: 'none',
   fontSize: '0.82rem',
   color: 'var(--text-primary)'
@@ -168,7 +170,8 @@ const filterLabelStyle = {
   fontSize: '0.72rem',
   fontWeight: 700,
   color: 'var(--text-secondary)',
-  minWidth: '60px'
+  whiteSpace: 'nowrap',
+  flexShrink: 0
 };
 
 const filterPillsWrapStyle = {

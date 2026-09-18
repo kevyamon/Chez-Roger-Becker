@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { CheckCircle2, Clock } from 'lucide-react';
+import { CheckCircle2, Clock, PauseCircle } from 'lucide-react';
 
 const STEPS = [
   { key: 'PENDING', label: 'Commande reçue', desc: 'En attente de confirmation' },
@@ -14,7 +14,7 @@ const STEPS = [
   { key: 'DELIVERED', label: 'Commande livrée', desc: 'Bon appétit !' }
 ];
 
-export const OrderTimelineCard = ({ currentStatus }) => {
+export const OrderTimelineCard = ({ currentStatus, isRestaurantClosed = false }) => {
   const getStepIndex = (status) => {
     if (['ASSIGNED', 'PICKED_UP', 'OUT_FOR_DELIVERY'].includes(status)) return 4;
     if (status === 'DELIVERED') return 5;
@@ -38,11 +38,23 @@ export const OrderTimelineCard = ({ currentStatus }) => {
                 <div
                   style={{
                     ...stepCircleStyle,
-                    backgroundColor: isCompleted ? 'var(--color-primary)' : 'var(--border-color)',
+                    backgroundColor: isCompleted
+                      ? isCurrent && isRestaurantClosed
+                        ? 'var(--status-warning, #D97706)'
+                        : 'var(--color-primary)'
+                      : 'var(--border-color)',
                     color: isCompleted ? 'var(--color-primary-contrast, #FFFFFF)' : 'var(--text-muted)'
                   }}
                 >
-                  {isCompleted ? <CheckCircle2 size={16} /> : <Clock size={14} />}
+                  {isCompleted ? (
+                    isCurrent && isRestaurantClosed ? (
+                      <PauseCircle size={15} />
+                    ) : (
+                      <CheckCircle2 size={16} />
+                    )
+                  ) : (
+                    <Clock size={14} />
+                  )}
                 </div>
                 {idx < STEPS.length - 1 && (
                   <div
@@ -54,10 +66,24 @@ export const OrderTimelineCard = ({ currentStatus }) => {
                 )}
               </div>
               <div style={stepContentStyle}>
-                <p style={{ ...stepHeadingStyle, color: isCurrent ? 'var(--color-primary)' : 'var(--text-primary)' }}>
+                <p
+                  style={{
+                    ...stepHeadingStyle,
+                    color: isCurrent
+                      ? isRestaurantClosed
+                        ? 'var(--status-warning, #D97706)'
+                        : 'var(--color-primary)'
+                      : 'var(--text-primary)'
+                  }}
+                >
                   {step.label}
+                  {isCurrent && isRestaurantClosed && ' (En pause)'}
                 </p>
-                <p style={stepDescStyle}>{step.desc}</p>
+                <p style={stepDescStyle}>
+                  {isCurrent && isRestaurantClosed
+                    ? 'Restaurant temporairement fermé. Reprise automatique dès l\'ouverture.'
+                    : step.desc}
+                </p>
               </div>
             </div>
           );

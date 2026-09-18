@@ -1,10 +1,10 @@
 /**
- * En-tete du Dashboard Administrateur (AdminHeader) Mobile-First.
- * Affiche le statut du restaurant (Ouvert/Ferme), la bascule Jour/Nuit et la deconnexion.
+ * En-tête du Dashboard Administrateur (AdminHeader) Mobile-First.
+ * Affiche le levier d'ouverture/fermeture du restaurant, les horaires en base et les actions de profil.
  */
 
 import React from 'react';
-import { Power, Sun, Moon, LogOut, ShieldCheck, Store } from 'lucide-react';
+import { Power, Sun, Moon, LogOut, ShieldCheck, Store, Clock } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 
 export const AdminHeader = ({
@@ -15,7 +15,12 @@ export const AdminHeader = ({
   isUpdatingStore
 }) => {
   const { user, logout } = useAuth();
-  const isOpen = Boolean(restaurantSettings?.isOpen);
+  const isManuallyOpen = Boolean(restaurantSettings?.isOpen !== false);
+  const isEffectivelyOpen = restaurantSettings?.isEffectivelyOpen !== undefined
+    ? Boolean(restaurantSettings.isEffectivelyOpen)
+    : isManuallyOpen;
+
+  const openingHours = restaurantSettings?.openingHours || 'Mardi – Dimanche : 11h00 – 23h00 (Fermé le lundi)';
 
   return (
     <header className="card-surface" style={headerContainerStyle}>
@@ -53,14 +58,26 @@ export const AdminHeader = ({
         </div>
       </div>
 
-      {/* Barre d'etat d'ouverture du restaurant */}
+      {/* Barre d'état d'ouverture et levier d'action */}
       <div style={storeStatusCardStyle}>
         <div style={storeStatusInfoStyle}>
-          <Store size={18} color={isOpen ? 'var(--status-success)' : 'var(--status-error)'} />
-          <div>
+          <div
+            style={{
+              ...statusIconWrapperStyle,
+              backgroundColor: isEffectivelyOpen ? 'var(--color-primary-surface)' : 'var(--bg-elevated)',
+              borderColor: isEffectivelyOpen ? 'var(--status-success)' : 'var(--status-error)'
+            }}
+          >
+            <Store size={18} color={isEffectivelyOpen ? 'var(--status-success)' : 'var(--status-error)'} />
+          </div>
+          <div style={statusTextColStyle}>
             <span style={storeStatusLabelStyle}>
-              Restaurant : {isOpen ? 'Ouvert aux commandes' : 'Fermé actuellement'}
+              Restaurant : {isEffectivelyOpen ? 'Ouvert aux commandes' : 'Fermé actuellement'}
             </span>
+            <div style={hoursSubRowStyle}>
+              <Clock size={12} color="var(--text-muted)" />
+              <span style={hoursTextStyle}>{openingHours}</span>
+            </div>
           </div>
         </div>
 
@@ -70,12 +87,12 @@ export const AdminHeader = ({
           disabled={isUpdatingStore}
           style={{
             ...toggleButtonStyle,
-            backgroundColor: isOpen ? 'var(--status-error)' : 'var(--status-success)',
+            backgroundColor: isManuallyOpen ? 'var(--status-error)' : 'var(--status-success)',
             opacity: isUpdatingStore ? 0.7 : 1
           }}
         >
           <Power size={14} />
-          {isOpen ? 'Fermer le restaurant' : 'Ouvrir le restaurant'}
+          {isManuallyOpen ? 'Fermer le restaurant' : 'Ouvrir le restaurant'}
         </button>
       </div>
     </header>
@@ -148,18 +165,37 @@ const storeStatusCardStyle = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  padding: '10px 14px',
+  padding: '12px 14px',
   backgroundColor: 'var(--bg-card-header)',
-  borderRadius: '10px',
+  borderRadius: '12px',
   border: '1px solid var(--border-color)',
   flexWrap: 'wrap',
-  gap: '8px'
+  gap: '10px'
 };
 
 const storeStatusInfoStyle = {
   display: 'flex',
   alignItems: 'center',
-  gap: '8px'
+  gap: '10px',
+  flex: 1,
+  minWidth: '200px'
+};
+
+const statusIconWrapperStyle = {
+  width: '36px',
+  height: '36px',
+  borderRadius: '10px',
+  border: '1.5px solid',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: 0
+};
+
+const statusTextColStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '2px'
 };
 
 const storeStatusLabelStyle = {
@@ -168,13 +204,25 @@ const storeStatusLabelStyle = {
   color: 'var(--text-primary)'
 };
 
+const hoursSubRowStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '4px'
+};
+
+const hoursTextStyle = {
+  fontSize: '0.72rem',
+  color: 'var(--text-muted)',
+  fontWeight: 600
+};
+
 const toggleButtonStyle = {
   display: 'inline-flex',
   alignItems: 'center',
   gap: '6px',
-  padding: '6px 12px',
-  borderRadius: '8px',
-  color: '#FFFFFF',
+  padding: '8px 14px',
+  borderRadius: '10px',
+  color: 'var(--color-primary-contrast, #FFFFFF)',
   border: 'none',
   fontSize: '0.78rem',
   fontWeight: 700,
