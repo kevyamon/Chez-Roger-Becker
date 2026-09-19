@@ -1,93 +1,129 @@
 /**
  * Contexte d'authentification pour les espaces Administrateur et Livreur.
- * Maintient la persistance synchrone du profil pour éviter les déconnexions intempestives lors des actualisations.
+ * Implémente la restauration optimiste synchrone et la résilience offline selon Yély.
  */
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../services/api';
+import { storageAdapter } from '../utils/storageAdapter';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
+  // Pilier 1 : Restauration optimiste et synchrone immédiate au lancement
+  const [user, setUser] = useState(() => storageAdapter.getUser());
+  const [token, setToken] = useState(() => storageAdapter.getAccessToken());
+  const [isLoading, setIsLoading] = useState(false);
+
+  const logout = useCallback(async () => {
     try {
-      const savedUser = localStorage.getItem('rb_user');
-      return savedUser ? JSON.parse(savedUser) : null;
-    } catch {
-      return null;
-    }
-  });
-
-  const [token, setToken] = useState(() => localStorage.getItem('rb_access_token'));
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const initAuth = async () => {
-      const storedToken = localStorage.getItem('rb_access_token');
-      if (storedToken) {
-        try {
-          const res = await apiClient.get('/auth/me');
-          if (res.success && res.data?.user) {
-            setUser(res.data.user);
-            localStorage.setItem('rb_user', JSON.stringify(res.data.user));
-          } else {
-            logout();
-          }
-        } catch {
-          logout();
-        }
-      }
-      setIsLoading(false);
-    };
-
-    initAuth();
-  }, []);
-
-  const login = async (identifier, password) => {
-    const res = await apiClient.post('/auth/login', { identifier, password });
-    if (res.success && res.data) {
-      const { user: userData, accessToken } = res.data;
-      setUser(userData);
-      setToken(accessToken);
-      localStorage.setItem('rb_access_token', accessToken);
-      localStorage.setItem('rb_user', JSON.stringify(userData));
-      return userData;
-    }
-    throw new Error(res.message || 'Échec de connexion');
-  };
-
-  const registerAdmin = async ({ name, email, phone, password, privateKey }) => {
-    const res = await apiClient.post('/auth/register-admin', {
-      name,
-      email,
-      phone,
-      password,
-      privateKey
-    });
-    if (res.success && res.data) {
-      const { user: userData, accessToken } = res.data;
-      setUser(userData);
-      setToken(accessToken);
-      localStorage.setItem('rb_access_token', accessToken);
-      localStorage.setItem('rb_user', JSON.stringify(userData));
-      return userData;
-    }
-    throw new Error(res.message || 'Échec de l\'inscription administrateur.');
-  };
-
-  const logout = async () => {
-    try {
-      if (token) {
+      if (storageAdapter.getAccessToken()) {
         await apiClient.post('/auth/logout');
       }
     } catch {
-      // Ignorer les erreurs réseau lors du logout
+      // Ignorer les erreurs réseau lors de la déconnexion
     } finally {
+      storageAdapter.clearAuthSession();
       setUser(null);
       setToken(null);
-      localStorage.removeItem('rb_access_token');
-      localStorage.removeItem('rb_user');
-      sessionStorage.removeItem('rb_active_tab');
+    }
+  }, []);
+
+  // Rafraîchissement silencieux de session en tâche de fond
+  const forceSilentRefresh = useCallback(async () => {
+    const currentRefreshToken = storageAdapter.getRefreshToken();
+    if (!currentRefreshToken && !token) return null;
+
+    try {
+      const res = await apiClient.post('/auth/refresh', {
+        refreshToken: currentRefreshToken
+      });
+
+      if (res.success && res.data) {
+        const { user: updatedUser, accessToken, refreshToken: newRefreshToken } = res.data;
+        setUser(updatedUser);
+        setToken(accessToken);
+        storageAdapter.setSession({
+          accessToken,
+          refreshToken: newRefreshToken,
+          user: updatedUser
+        });
+        return updatedUser;
+      }
+    } catch (err) {
+      if (err.status === 401 || err.status === 403) {
+        logout();
+      }
+      // Si erreur réseau, on ne déconnecte JAMAIS l'utilisateur
+    }
+    return null;
+  }, [token, logout]);
+
+  // Synchronisation d'arrière-plan au démarrage (non bloquante)
+  useEffect(() => {
+    const syncSession = async () => {
+      const storedToken = storageAdapter.getAccessToken();
+      if (!storedToken) return;
+
+      try {
+        const res = await apiClient.get('/auth/me');
+        if (res.success && res.data?.user) {
+          setUser(res.data.user);
+          storageAdapter.setUser(res.data.user);
+        }
+      } catch (err) {
+        // Déconnexion uniquement si rejet définitif d'autorisation
+        if (err.status === 401 && !err.isNetworkError) {
+          logout();
+        }
+      }
+    };
+
+    syncSession();
+  }, [logout]);
+
+  // Écoute des événements de révocation de session globale
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      setUser(null);
+      setToken(null);
+    };
+
+    window.addEventListener('auth:expired', handleAuthExpired);
+    return () => window.removeEventListener('auth:expired', handleAuthExpired);
+  }, []);
+
+  const login = async (identifier, password) => {
+    setIsLoading(true);
+    try {
+      const res = await apiClient.post('/auth/login', { identifier, password });
+      if (res.success && res.data) {
+        const { user: userData, accessToken, refreshToken } = res.data;
+        setUser(userData);
+        setToken(accessToken);
+        storageAdapter.setSession({ accessToken, refreshToken, user: userData });
+        return userData;
+      }
+      throw new Error(res.message || 'Identifiants invalides.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const registerAdmin = async (formData) => {
+    setIsLoading(true);
+    try {
+      const res = await apiClient.post('/auth/register-admin', formData);
+      if (res.success && res.data) {
+        const { user: userData, accessToken, refreshToken } = res.data;
+        setUser(userData);
+        setToken(accessToken);
+        storageAdapter.setSession({ accessToken, refreshToken, user: userData });
+        return userData;
+      }
+      throw new Error(res.message || 'Échec de l\'inscription administrateur.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -102,7 +138,8 @@ export const AuthProvider = ({ children }) => {
         isLoading,
         login,
         registerAdmin,
-        logout
+        logout,
+        forceSilentRefresh
       }}
     >
       {children}

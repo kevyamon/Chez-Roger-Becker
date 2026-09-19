@@ -9,6 +9,8 @@ import { socket } from './services/socket';
 import { useAuth } from './context/AuthContext';
 import { useCart } from './context/CartContext';
 import { useToast } from './context/ToastContext';
+import { useAppStartup } from './hooks/useAppStartup';
+import { storageAdapter } from './utils/storageAdapter';
 
 // Composants Layout & UI
 import { Header } from './components/layout/Header';
@@ -32,6 +34,9 @@ export function App() {
   const { addItem, setDeliveryFee } = useCart();
   const { showSuccess, showInfo } = useToast();
 
+  // Active le monitoring du cycle de vie PWA et la résilience hors-ligne
+  useAppStartup();
+
   const [activeTab, setActiveTab] = useState(() => {
     const path = window.location.pathname.toLowerCase();
     if (path.includes('/admin') || path.includes('/dashboard') || path.includes('/backoffice')) {
@@ -48,7 +53,7 @@ export function App() {
   const [restaurant, setRestaurant] = useState({});
   const [selectedDish, setSelectedDish] = useState(null);
   const [selectedDishQty, setSelectedDishQty] = useState(1);
-  const [trackingToken, setTrackingToken] = useState(() => localStorage.getItem('rb_last_tracking_token'));
+  const [trackingToken, setTrackingToken] = useState(() => storageAdapter.getTrackingToken());
 
   const handleNavigate = (tab) => {
     setActiveTab(tab);
@@ -170,7 +175,7 @@ export function App() {
 
   const handleOrderSuccess = (token) => {
     setTrackingToken(token);
-    localStorage.setItem('rb_last_tracking_token', token);
+    storageAdapter.setTrackingToken(token);
     handleNavigate('track');
   };
 
