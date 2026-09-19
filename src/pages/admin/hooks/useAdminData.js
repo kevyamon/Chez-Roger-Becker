@@ -179,6 +179,30 @@ export const useAdminData = () => {
     }
   };
 
+  const updateDriver = async (driverId, updateData) => {
+    try {
+      const res = await apiClient.patch(`/admin/drivers/${driverId}`, updateData);
+      if (res.success && res.data?.driver) {
+        setDrivers((prev) => prev.map((d) => (d._id === driverId ? res.data.driver : d)));
+        showSuccess('Compte livreur mis à jour avec succès.');
+      }
+    } catch (err) {
+      showError(err.message || 'Échec de mise à jour du livreur.');
+    }
+  };
+
+  const deleteDriver = async (driverId) => {
+    try {
+      const res = await apiClient.delete(`/admin/drivers/${driverId}`);
+      if (res.success) {
+        setDrivers((prev) => prev.filter((d) => d._id !== driverId));
+        showSuccess('Livreur supprimé avec succès.');
+      }
+    } catch (err) {
+      showError(err.message || 'Échec de suppression du livreur.');
+    }
+  };
+
   const saveSettings = async (newSettings) => {
     try {
       const res = await apiClient.patch('/admin/settings', newSettings);
@@ -206,6 +230,8 @@ export const useAdminData = () => {
     toggleDishAvailability,
     deleteDish,
     createDriver,
+    updateDriver,
+    deleteDriver,
     saveSettings
   };
 };

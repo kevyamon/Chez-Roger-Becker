@@ -73,6 +73,8 @@ export const AdminDashboardPage = () => {
             onToggleAvailability={adminData.toggleDishAvailability}
             onDeleteDish={adminData.deleteDish}
             onCreateDriver={adminData.createDriver}
+            onUpdateDriver={adminData.updateDriver}
+            onDeleteDriver={adminData.deleteDriver}
             onSaveSettings={adminData.saveSettings}
           />
         </main>

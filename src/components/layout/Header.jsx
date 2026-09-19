@@ -1,6 +1,6 @@
 /**
  * En-tête de l'application Chez Roger Becker.
- * Affiche le statut d'ouverture, le logo et le bouton de bascule clair/sombre.
+ * Affiche le statut d'ouverture, le logo, l'accès pro/livreur et le bouton de bascule clair/sombre.
  */
 
 import React from 'react';
@@ -73,7 +73,7 @@ const titleStyle = {
 const actionsContainerStyle = {
   display: 'flex',
   alignItems: 'center',
-  gap: '10px'
+  gap: '8px'
 };
 
 const themeButtonStyle = {
@@ -84,7 +84,8 @@ const themeButtonStyle = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  backgroundColor: 'var(--bg-elevated)'
+  backgroundColor: 'var(--bg-elevated)',
+  cursor: 'pointer'
 };
 
 const badgeAdminStyle = {
@@ -93,10 +94,12 @@ const badgeAdminStyle = {
   gap: '4px',
   fontSize: '0.72rem',
   fontWeight: 700,
-  padding: '4px 8px',
+  padding: '6px 10px',
   borderRadius: '8px',
-  backgroundColor: 'var(--color-accent-surface)',
-  color: 'var(--color-accent-dark)'
+  backgroundColor: 'var(--color-accent-surface, rgba(2, 132, 199, 0.12))',
+  color: 'var(--color-accent-dark, #0284C7)',
+  border: '1px solid var(--border-color)',
+  cursor: 'pointer'
 };
 
 const badgeDriverStyle = {
@@ -105,13 +108,15 @@ const badgeDriverStyle = {
   gap: '4px',
   fontSize: '0.72rem',
   fontWeight: 700,
-  padding: '4px 8px',
+  padding: '6px 10px',
   borderRadius: '8px',
-  backgroundColor: 'var(--color-secondary-surface)',
-  color: 'var(--color-secondary-dark)'
+  backgroundColor: 'var(--color-secondary-surface, rgba(230, 81, 0, 0.12))',
+  color: 'var(--color-secondary-dark, #E65100)',
+  border: '1px solid var(--border-color)',
+  cursor: 'pointer'
 };
 
-export const Header = ({ restaurantInfo, onOpenMenu }) => {
+export const Header = ({ restaurantInfo, onNavigate }) => {
   const { isDarkMode, toggleTheme } = useTheme();
   const { user, isAdmin, isDriver } = useAuth();
 
@@ -150,15 +155,23 @@ export const Header = ({ restaurantInfo, onOpenMenu }) => {
       </div>
 
       <div style={actionsContainerStyle}>
-        {isAdmin && (
-          <span style={badgeAdminStyle}>
+        {isAdmin && onNavigate && (
+          <button
+            onClick={() => onNavigate('auth')}
+            style={badgeAdminStyle}
+            title="Accéder au tableau de bord administrateur"
+          >
             <Shield size={13} /> Admin
-          </span>
+          </button>
         )}
-        {isDriver && (
-          <span style={badgeDriverStyle}>
+        {isDriver && onNavigate && (
+          <button
+            onClick={() => onNavigate('auth')}
+            style={badgeDriverStyle}
+            title="Accéder au tableau de bord livreur"
+          >
             <Bike size={13} /> Livreur
-          </span>
+          </button>
         )}
         <button
           onClick={toggleTheme}

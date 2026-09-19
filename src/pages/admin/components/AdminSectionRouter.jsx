@@ -25,6 +25,8 @@ export const AdminSectionRouter = ({
   onToggleAvailability,
   onDeleteDish,
   onCreateDriver,
+  onUpdateDriver,
+  onDeleteDriver,
   onSaveSettings
 }) => {
   switch (activeSection) {
@@ -51,7 +53,15 @@ export const AdminSectionRouter = ({
         />
       );
     case 'drivers':
-      return <AdminDriversSection drivers={drivers} onCreateDriver={onCreateDriver} isLoading={isLoading} />;
+      return (
+        <AdminDriversSection
+          drivers={drivers}
+          onCreateDriver={onCreateDriver}
+          onUpdateDriver={onUpdateDriver}
+          onDeleteDriver={onDeleteDriver}
+          isLoading={isLoading}
+        />
+      );
     case 'settings':
       return <AdminSettingsSection settings={settings} onSaveSettings={onSaveSettings} isLoading={isLoading} />;
     default:

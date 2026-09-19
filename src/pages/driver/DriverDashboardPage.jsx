@@ -1,23 +1,31 @@
 /**
  * Tableau de bord spécialisé pour les livreurs (DriverDashboard).
- * Gestion de disponibilité, acceptation concurrente de courses et guidage d'itinéraire.
+ * Onglets fluides : Courses en cours, Nouvelles commandes, Historique/Stats et Mon Compte.
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
+import { Navigation, Bike, History, Package } from 'lucide-react';
 import { apiClient } from '../../services/api';
+import { socket } from '../../services/socket';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { DriverHeaderCard } from './components/DriverHeaderCard';
 import { DriverActiveDeliveryCard } from './components/DriverActiveDeliveryCard';
 import { DriverAvailableOrdersList } from './components/DriverAvailableOrdersList';
+import { DriverHistorySection } from './components/DriverHistorySection';
+import { DriverProfileModal } from './components/DriverProfileModal';
 
 export const DriverDashboardPage = () => {
   const { user, logout } = useAuth();
-  const { showSuccess, showError } = useToast();
+  const { showSuccess, showError, showInfo } = useToast();
 
+  const [activeTab, setActiveTab] = useState('active'); // 'active' | 'available' | 'history'
   const [driverStatus, setDriverStatus] = useState(user?.driverStatus || 'AVAILABLE');
   const [availableOrders, setAvailableOrders] = useState([]);
   const [activeDeliveries, setActiveDeliveries] = useState([]);
+  const [driverStats, setDriverStats] = useState(null);
+  const [currentUser, setCurrentUser] = useState(user);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const fetchDashboardData = useCallback(async () => {
@@ -27,6 +35,7 @@ export const DriverDashboardPage = () => {
       if (res.success && res.data) {
         setActiveDeliveries(res.data.activeDeliveries || []);
         setAvailableOrders(res.data.availableOrders || []);
+        setDriverStats(res.data.stats || null);
       }
     } catch (err) {
       showError(err.message || 'Erreur lors du chargement des courses.');
@@ -38,6 +47,26 @@ export const DriverDashboardPage = () => {
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
+
+  // Synchronisation temps réel Socket.IO pour les livreurs
+  useEffect(() => {
+    const onOrderReady = () => {
+      showInfo('Nouvelle commande prête pour livraison !');
+      fetchDashboardData();
+    };
+
+    const onOrderTaken = () => {
+      fetchDashboardData();
+    };
+
+    socket.on('order:ready_for_pickup', onOrderReady);
+    socket.on('order:taken', onOrderTaken);
+
+    return () => {
+      socket.off('order:ready_for_pickup', onOrderReady);
+      socket.off('order:taken', onOrderTaken);
+    };
+  }, [fetchDashboardData, showInfo]);
 
   const handleToggleStatus = async (newStatus) => {
     try {
@@ -57,6 +86,7 @@ export const DriverDashboardPage = () => {
       if (res.success) {
         showSuccess('Course acceptée ! Rendez-vous au restaurant pour récupérer le repas.');
         fetchDashboardData();
+        setActiveTab('active');
       }
     } catch (err) {
       showError(err.message || 'Cette commande a déjà été attribuée.');
@@ -85,36 +115,89 @@ export const DriverDashboardPage = () => {
 
   return (
     <div className="animate-fade-in" style={containerStyle}>
-      {/* 1. EN-TÊTE LIVREUR, STATUT & BANNIÈRE NOTIFICATIONS PUSH */}
+      {/* 1. EN-TÊTE DU LIVREUR & DISPONIBILITÉ */}
       <DriverHeaderCard
-        user={user}
+        user={currentUser}
         driverStatus={driverStatus}
         onToggleStatus={handleToggleStatus}
+        onOpenProfile={() => setShowProfileModal(true)}
         onLogout={logout}
       />
 
-      {/* 2. COURSES EN COURS */}
-      {activeDeliveries.length > 0 && (
+      {/* 2. ONGLETS DE NAVIGATION LIVREUR */}
+      <div style={navTabsStyle}>
+        <button
+          onClick={() => setActiveTab('active')}
+          style={activeTab === 'active' ? activeTabStyle : tabStyle}
+        >
+          <Navigation size={15} />
+          Courses en cours {activeDeliveries.length > 0 ? `(${activeDeliveries.length})` : ''}
+        </button>
+        <button
+          onClick={() => setActiveTab('available')}
+          style={activeTab === 'available' ? activeTabStyle : tabStyle}
+        >
+          <Package size={15} />
+          Disponibles {availableOrders.length > 0 ? `(${availableOrders.length})` : ''}
+        </button>
+        <button
+          onClick={() => setActiveTab('history')}
+          style={activeTab === 'history' ? activeTabStyle : tabStyle}
+        >
+          <History size={15} />
+          Historique
+        </button>
+      </div>
+
+      {/* 3. CONTENU SELON L'ONGLET SÉLECTIONNÉ */}
+      {activeTab === 'active' && (
         <div style={sectionStyle}>
-          <h4 style={sectionTitleStyle}>Votre Course Active</h4>
-          {activeDeliveries.map((delivery) => (
-            <DriverActiveDeliveryCard
-              key={delivery._id}
-              delivery={delivery}
-              onAction={handleOrderAction}
-              onOpenNavigation={handleOpenNavigation}
-            />
-          ))}
+          {activeDeliveries.length === 0 ? (
+            <div className="card-surface" style={emptyStateStyle}>
+              <Bike size={36} color="var(--text-muted)" />
+              <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)' }}>
+                Aucune course active en ce moment.
+              </p>
+              {availableOrders.length > 0 && (
+                <button onClick={() => setActiveTab('available')} style={ctaLinkStyle}>
+                  Voir les {availableOrders.length} commande(s) disponible(s)
+                </button>
+              )}
+            </div>
+          ) : (
+            activeDeliveries.map((delivery) => (
+              <DriverActiveDeliveryCard
+                key={delivery._id}
+                delivery={delivery}
+                onAction={handleOrderAction}
+                onOpenNavigation={handleOpenNavigation}
+              />
+            ))
+          )}
         </div>
       )}
 
-      {/* 3. COMMANDES DISPONIBLES */}
-      <DriverAvailableOrdersList
-        orders={availableOrders}
-        onAcceptOrder={handleAcceptOrder}
-        onRefresh={fetchDashboardData}
-        isLoading={isLoading}
-      />
+      {activeTab === 'available' && (
+        <DriverAvailableOrdersList
+          orders={availableOrders}
+          onAcceptOrder={handleAcceptOrder}
+          onRefresh={fetchDashboardData}
+          isLoading={isLoading}
+        />
+      )}
+
+      {activeTab === 'history' && (
+        <DriverHistorySection driverStats={driverStats} />
+      )}
+
+      {/* MODALE MON PROFIL / CHANGEMENT MOT DE PASSE */}
+      {showProfileModal && (
+        <DriverProfileModal
+          user={currentUser}
+          onClose={() => setShowProfileModal(false)}
+          onProfileUpdated={(updated) => setCurrentUser(updated)}
+        />
+      )}
     </div>
   );
 };
@@ -123,18 +206,65 @@ const containerStyle = {
   padding: '16px',
   display: 'flex',
   flexDirection: 'column',
-  gap: '16px',
-  paddingBottom: '30px'
+  gap: '14px',
+  paddingBottom: '40px',
+  maxWidth: '600px',
+  margin: '0 auto'
+};
+
+const navTabsStyle = {
+  display: 'flex',
+  backgroundColor: 'var(--bg-card-header)',
+  borderRadius: '10px',
+  padding: '3px',
+  gap: '2px'
+};
+
+const tabStyle = {
+  flex: 1,
+  padding: '8px 4px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '6px',
+  fontSize: '0.78rem',
+  fontWeight: 600,
+  color: 'var(--text-secondary)',
+  backgroundColor: 'transparent',
+  border: 'none',
+  borderRadius: '8px',
+  cursor: 'pointer'
+};
+
+const activeTabStyle = {
+  ...tabStyle,
+  color: '#FFFFFF',
+  backgroundColor: 'var(--color-primary)',
+  fontWeight: 700
 };
 
 const sectionStyle = {
   display: 'flex',
   flexDirection: 'column',
-  gap: '10px'
+  gap: '12px'
 };
 
-const sectionTitleStyle = {
-  fontSize: '1.05rem',
-  fontWeight: 800,
-  color: 'var(--text-primary)'
+const emptyStateStyle = {
+  padding: '32px 16px',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: '10px',
+  textAlign: 'center',
+  borderRadius: '14px'
+};
+
+const ctaLinkStyle = {
+  background: 'none',
+  border: 'none',
+  color: 'var(--color-primary)',
+  fontWeight: 700,
+  fontSize: '0.82rem',
+  cursor: 'pointer',
+  textDecoration: 'underline'
 };

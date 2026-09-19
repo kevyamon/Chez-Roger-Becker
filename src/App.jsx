@@ -231,7 +231,11 @@ export function App() {
   return (
     <div className="app-container">
       {!isProFlow && (
-        <Header restaurantInfo={restaurant} onOpenMenu={() => handleNavigate('menu')} />
+        <Header
+          restaurantInfo={restaurant}
+          onNavigate={handleNavigate}
+          onOpenMenu={() => handleNavigate('menu')}
+        />
       )}
 
       <main style={{ flex: 1 }}>{renderActiveScreen()}</main>

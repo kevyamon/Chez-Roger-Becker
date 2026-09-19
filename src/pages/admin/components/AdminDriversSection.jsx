@@ -1,6 +1,6 @@
 /**
  * Section Gestion des Livreurs (AdminDriversSection).
- * Suivi de la flotte de livreurs, de leur disponibilité et création de comptes.
+ * Suivi de la flotte de livreurs, de leur disponibilité, création et modification de comptes.
  */
 
 import React, { useState } from 'react';
@@ -11,7 +11,9 @@ import { DriverCard } from './DriverCard';
 
 export const AdminDriversSection = ({
   drivers = [],
-  onCreateDriver
+  onCreateDriver,
+  onUpdateDriver,
+  onDeleteDriver
 }) => {
   const [showAddForm, setShowAddForm] = useState(false);
 
@@ -50,7 +52,12 @@ export const AdminDriversSection = ({
           </div>
         ) : (
           drivers.map((driver) => (
-            <DriverCard key={driver._id} driver={driver} />
+            <DriverCard
+              key={driver._id}
+              driver={driver}
+              onUpdateDriver={onUpdateDriver}
+              onDeleteDriver={onDeleteDriver}
+            />
           ))
         )}
       </div>
@@ -68,7 +75,8 @@ const actionHeaderCardStyle = {
   padding: '14px',
   display: 'flex',
   flexDirection: 'column',
-  gap: '12px'
+  gap: '12px',
+  borderRadius: '12px'
 };
 
 const headerTitleRowStyle = {
@@ -100,11 +108,11 @@ const emptyCardStyle = {
   flexDirection: 'column',
   alignItems: 'center',
   gap: '8px',
-  textAlign: 'center'
+  textAlign: 'center',
+  borderRadius: '12px'
 };
 
 const emptyTextStyle = {
   fontSize: '0.82rem',
   color: 'var(--text-muted)'
 };
-

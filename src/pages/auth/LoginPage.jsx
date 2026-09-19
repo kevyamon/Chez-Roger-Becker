@@ -1,10 +1,10 @@
 /**
- * Page d'authentification et d'inscription administrateur sécurisée.
- * Accessible uniquement via le déclencheur secret (double-clic + appui long).
+ * Page d'authentification professionnelle unifiée (Admin et Livreurs).
+ * Redirection automatique selon le rôle du compte connecté.
  */
 
 import React, { useState } from 'react';
-import { Lock, ArrowLeft } from 'lucide-react';
+import { Lock, ArrowLeft, Bike } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { LoginForm } from './components/LoginForm';
@@ -28,7 +28,7 @@ export const LoginPage = ({ onNavigate, onLoginSuccess }) => {
       showSuccess(`Bienvenue, ${user.firstName} !`);
       if (onLoginSuccess) onLoginSuccess(user);
     } catch (err) {
-      showError(err.message || 'Identifiants invalides.');
+      showError(err.message || 'Identifiant ou mot de passe incorrect.');
     } finally {
       setIsLoading(false);
     }
@@ -65,10 +65,10 @@ export const LoginPage = ({ onNavigate, onLoginSuccess }) => {
           <div style={iconBadgeStyle}>
             <Lock size={22} color="var(--color-primary-text, #FFFFFF)" />
           </div>
-          <h2 style={titleStyle}>Espace Administration</h2>
+          <h2 style={titleStyle}>Espace Professionnel</h2>
           <p style={subtitleStyle}>
             {mode === 'login'
-              ? 'Accès réservé aux administrateurs et au personnel autorisé.'
+              ? 'Connexion sécurisée pour les administrateurs et les livreurs officiels.'
               : 'Création sécurisée d\'un nouveau compte administrateur.'}
           </p>
 
@@ -78,14 +78,14 @@ export const LoginPage = ({ onNavigate, onLoginSuccess }) => {
               onClick={() => setMode('login')}
               style={mode === 'login' ? activeTabStyle : inactiveTabStyle}
             >
-              Connexion
+              Connexion (Admin / Livreur)
             </button>
             <button
               type="button"
               onClick={() => setMode('register')}
               style={mode === 'register' ? activeTabStyle : inactiveTabStyle}
             >
-              Créer un compte
+              Créer compte Admin
             </button>
           </div>
         </div>
@@ -130,7 +130,8 @@ const cardStyle = {
   padding: '24px 20px',
   display: 'flex',
   flexDirection: 'column',
-  gap: '18px'
+  gap: '18px',
+  borderRadius: '16px'
 };
 
 const headerStyle = {
@@ -153,7 +154,7 @@ const iconBadgeStyle = {
 };
 
 const titleStyle = {
-  fontSize: '1.3rem',
+  fontSize: '1.25rem',
   fontWeight: 800,
   color: 'var(--text-primary)'
 };
@@ -176,12 +177,12 @@ const tabSwitcherStyle = {
 
 const activeTabStyle = {
   flex: 1,
-  padding: '8px 12px',
+  padding: '8px 10px',
   backgroundColor: 'var(--color-primary)',
   color: '#FFFFFF',
   border: 'none',
   borderRadius: '8px',
-  fontSize: '0.82rem',
+  fontSize: '0.78rem',
   fontWeight: 700,
   cursor: 'pointer',
   transition: 'all 0.2s ease'
@@ -189,14 +190,13 @@ const activeTabStyle = {
 
 const inactiveTabStyle = {
   flex: 1,
-  padding: '8px 12px',
+  padding: '8px 10px',
   backgroundColor: 'transparent',
   color: 'var(--text-secondary)',
   border: 'none',
   borderRadius: '8px',
-  fontSize: '0.82rem',
+  fontSize: '0.78rem',
   fontWeight: 600,
   cursor: 'pointer',
   transition: 'all 0.2s ease'
 };
-

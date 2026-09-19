@@ -1,17 +1,19 @@
 /**
  * En-tête du tableau de bord livreur (DriverHeaderCard).
- * Affiche le profil, le bouton de déconnexion, le sélecteur de statut et la bannière push.
+ * Affiche le profil, le bouton d'édition de compte, le sélecteur de statut et la bannière push.
  */
 
 import React from 'react';
-import { Power } from 'lucide-react';
+import { Power, UserCircle } from 'lucide-react';
 import { NotificationPermissionBanner } from '../../../components/ui/NotificationPermissionBanner';
+import { Button } from '../../../components/ui/Button';
 import { theme } from '../../../styles/theme';
 
 export const DriverHeaderCard = ({
   user,
   driverStatus,
   onToggleStatus,
+  onOpenProfile,
   onLogout
 }) => {
   return (
@@ -19,21 +21,31 @@ export const DriverHeaderCard = ({
       <div className="card-surface" style={headerCardStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-              Espace Livreur
+            <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+              Espace Livreur Officiel
             </span>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-              Bonjour, {user?.firstName}
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+              {user?.firstName} {user?.lastName}
             </h3>
           </div>
-          <button
-            onClick={onLogout}
-            style={logoutBtnStyle}
-            title="Déconnexion"
-            aria-label="Déconnexion"
-          >
-            <Power size={18} color="var(--status-error)" />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Button
+              variant="outline"
+              size="sm"
+              icon={UserCircle}
+              onClick={onOpenProfile}
+            >
+              Mon Compte
+            </Button>
+            <button
+              onClick={onLogout}
+              style={logoutBtnStyle}
+              title="Déconnexion"
+              aria-label="Déconnexion"
+            >
+              <Power size={18} color="var(--status-error)" />
+            </button>
+          </div>
         </div>
 
         <div style={statusToggleRowStyle}>
@@ -43,7 +55,7 @@ export const DriverHeaderCard = ({
           <div style={{ display: 'flex', gap: '6px' }}>
             {['AVAILABLE', 'OFFLINE'].map((st) => {
               const isSelected = driverStatus === st;
-              const bgActive = st === 'AVAILABLE' ? 'var(--status-success)' : 'var(--text-muted)';
+              const bgActive = st === 'AVAILABLE' ? 'var(--status-success, #16A34A)' : 'var(--text-muted)';
               return (
                 <button
                   key={st}
@@ -69,10 +81,10 @@ export const DriverHeaderCard = ({
 };
 
 const headerCardStyle = {
-  padding: '18px',
+  padding: '16px',
   display: 'flex',
   flexDirection: 'column',
-  gap: '14px',
+  gap: '12px',
   borderRadius: theme.radii.md
 };
 
