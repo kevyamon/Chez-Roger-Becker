@@ -17,7 +17,9 @@ export const HomePage = ({
   onNavigate,
   onSelectDish
 }) => {
-  const featuredDishes = dishes.filter((d) => d.isFeatured).slice(0, 4);
+  const availableDishes = dishes.filter((d) => d.isAvailable !== false);
+  const featured = availableDishes.filter((d) => d.isFeatured);
+  const popularDishes = featured.length > 0 ? featured.slice(0, 6) : availableDishes.slice(0, 6);
   const activePromo = promotions[0];
 
   return (
@@ -77,7 +79,7 @@ export const HomePage = ({
         </div>
 
         <div style={dishesGridStyle}>
-          {featuredDishes.map((dish) => (
+          {popularDishes.map((dish) => (
             <DishCard key={dish._id} dish={dish} onSelect={onSelectDish} />
           ))}
         </div>
@@ -202,7 +204,10 @@ const sectionSubtitleStyle = {
 const seeAllButtonStyle = {
   fontSize: '0.84rem',
   fontWeight: 700,
-  color: 'var(--color-primary)'
+  color: 'var(--color-primary)',
+  background: 'none',
+  border: 'none',
+  cursor: 'pointer'
 };
 
 const dishesGridStyle = {

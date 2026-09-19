@@ -61,7 +61,7 @@ export function App() {
     applyTheme(savedTheme);
   }, []);
 
-  // Chargement initial des données du restaurant
+  // Chargement et rafraîchissement des données lors des changements de page
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
@@ -87,7 +87,7 @@ export function App() {
     };
 
     fetchInitialData();
-  }, []);
+  }, [activeTab]);
 
   // Synchronisation temps réel Socket.IO (Public & PWA)
   useEffect(() => {

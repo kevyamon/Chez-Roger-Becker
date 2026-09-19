@@ -126,16 +126,20 @@ export const useAdminData = () => {
         if (res.success && res.data?.dish) {
           setDishes((prev) => prev.map((d) => (d._id === dishData._id ? res.data.dish : d)));
           showSuccess('Plat mis à jour avec succès.');
+          return true;
         }
       } else {
         const res = await apiClient.post('/admin/dishes', dishData);
         if (res.success && res.data?.dish) {
           setDishes((prev) => [res.data.dish, ...prev]);
           showSuccess('Nouveau plat ajouté à la carte.');
+          return true;
         }
       }
+      return false;
     } catch (err) {
       showError(err.message || 'Échec lors de l\'enregistrement du plat.');
+      return false;
     }
   };
 
@@ -146,7 +150,7 @@ export const useAdminData = () => {
         setDishes((prev) =>
           prev.map((d) => (d._id === dishId ? { ...d, isAvailable: !currentAvailability } : d))
         );
-        showSuccess(`Plat ${!currentAvailability ? 'disponible' : 'indisponible'}.`);
+        showSuccess(`Plat ${!currentAvailability ? 'marqué comme disponible' : 'marqué comme épuisé'}.`);
       }
     } catch (err) {
       showError(err.message || 'Échec du changement de statut.');

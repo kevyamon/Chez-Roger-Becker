@@ -1,6 +1,6 @@
 /**
  * Modale de création et d'édition de plat (DishEditModal).
- * Sélection d'image depuis la galerie avec téléversement Cloudinary et sélecteurs sur-mesure.
+ * Sélection d'image avec téléversement Cloudinary et enregistrement asynchrone sécurisé.
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -13,6 +13,7 @@ import { useToast } from '../../../context/ToastContext';
 
 const CATEGORY_OPTIONS = ['Normal', 'VIP', 'Spécial'];
 const TYPE_OPTIONS = ['Nourriture', 'Boisson'];
+const DEFAULT_IMAGE_FALLBACK = 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80';
 
 export const DishEditModal = ({
   isOpen,
@@ -32,6 +33,7 @@ export const DishEditModal = ({
   const [category, setCategory] = useState('Normal');
   const [image, setImage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [preparationTime, setPreparationTime] = useState('20');
   const [isFeatured, setIsFeatured] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
@@ -90,7 +92,7 @@ export const DishEditModal = ({
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim() || !price || !category || !type) return;
 
@@ -98,20 +100,34 @@ export const DishEditModal = ({
       (c) => c.name?.toLowerCase() === category.toLowerCase()
     );
 
-    onSaveDish({
-      ...(dish?._id ? { _id: dish._id } : {}),
-      name: name.trim(),
-      description: description.trim(),
-      price: Number(price),
-      type,
-      category,
-      ...(matchedCategory?._id ? { categoryId: matchedCategory._id } : {}),
-      image: image.trim(),
-      preparationTime: Number(preparationTime) || 20,
-      isFeatured,
-      isAvailable
-    });
-    onClose();
+    const safeDescription = description.trim().length >= 5
+      ? description.trim()
+      : `Savoureuse spécialité ${name.trim()} préparée par notre chef.`;
+
+    const safeImage = image.trim() || DEFAULT_IMAGE_FALLBACK;
+
+    try {
+      setIsSubmitting(true);
+      const success = await onSaveDish({
+        ...(dish?._id ? { _id: dish._id } : {}),
+        name: name.trim(),
+        description: safeDescription,
+        price: Number(price),
+        type,
+        category,
+        ...(matchedCategory?._id ? { categoryId: matchedCategory._id } : {}),
+        image: safeImage,
+        preparationTime: Number(preparationTime) || 20,
+        isFeatured,
+        isAvailable
+      });
+
+      if (success) {
+        onClose();
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -257,11 +273,11 @@ export const DishEditModal = ({
         </div>
 
         <div style={footerStyle}>
-          <Button variant="secondary" size="md" type="button" onClick={onClose}>
+          <Button variant="secondary" size="md" type="button" onClick={onClose} disabled={isSubmitting}>
             Annuler
           </Button>
-          <Button variant="primary" size="md" type="submit" icon={Save} disabled={isUploading}>
-            {isEditing ? 'Mettre à jour' : 'Créer le plat'}
+          <Button variant="primary" size="md" type="submit" icon={Save} disabled={isUploading || isSubmitting}>
+            {isSubmitting ? 'Enregistrement...' : isEditing ? 'Mettre à jour' : 'Créer le plat'}
           </Button>
         </div>
       </form>

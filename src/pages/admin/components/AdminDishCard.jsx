@@ -61,10 +61,20 @@ export const AdminDishCard = ({
           <button
             type="button"
             onClick={() => onToggleAvailability(dish._id, !dish.isAvailable)}
-            style={dish.isAvailable ? availableBadgeStyle : unavailableBadgeStyle}
+            style={dish.isAvailable ? availableBtnStyle : unavailableBtnStyle}
+            title={dish.isAvailable ? 'Cliquer pour marquer ce plat comme épuisé' : 'Cliquer pour rendre ce plat disponible'}
           >
-            {dish.isAvailable ? <CheckCircle2 size={13} /> : <XCircle size={13} />}
-            <span>{dish.isAvailable ? 'Disponible' : 'Épuisé'}</span>
+            {dish.isAvailable ? (
+              <>
+                <CheckCircle2 size={14} color="var(--status-success)" />
+                <span>Disponible</span>
+              </>
+            ) : (
+              <>
+                <XCircle size={14} color="var(--status-error)" />
+                <span>Épuisé</span>
+              </>
+            )}
           </button>
 
           <div style={dishActionsStyle}>
@@ -197,28 +207,34 @@ const dishFooterStyle = {
   marginTop: '4px'
 };
 
-const badgeBaseStyle = {
+const availableBtnStyle = {
   display: 'inline-flex',
   alignItems: 'center',
-  gap: '4px',
-  padding: '3px 8px',
-  borderRadius: '6px',
-  fontSize: '0.7rem',
+  gap: '5px',
+  padding: '5px 10px',
+  borderRadius: '8px',
+  fontSize: '0.74rem',
   fontWeight: 700,
-  border: 'none',
-  cursor: 'pointer'
+  backgroundColor: 'rgba(22, 163, 74, 0.12)',
+  color: 'var(--status-success)',
+  border: '1.5px solid rgba(22, 163, 74, 0.40)',
+  cursor: 'pointer',
+  transition: 'all 0.15s ease'
 };
 
-const availableBadgeStyle = {
-  ...badgeBaseStyle,
-  backgroundColor: 'var(--color-accent-surface)',
-  color: 'var(--color-accent-dark)'
-};
-
-const unavailableBadgeStyle = {
-  ...badgeBaseStyle,
-  backgroundColor: 'var(--bg-card-header)',
-  color: 'var(--text-muted)'
+const unavailableBtnStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '5px',
+  padding: '5px 10px',
+  borderRadius: '8px',
+  fontSize: '0.74rem',
+  fontWeight: 700,
+  backgroundColor: 'rgba(220, 38, 38, 0.16)',
+  color: 'var(--status-error)',
+  border: '1.5px solid rgba(220, 38, 38, 0.45)',
+  cursor: 'pointer',
+  transition: 'all 0.15s ease'
 };
 
 const dishActionsStyle = {
