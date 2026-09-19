@@ -58,7 +58,6 @@ export const AdminDashboardPage = () => {
             dishes={adminData.dishes}
             categories={adminData.categories}
             drivers={adminData.drivers}
-            auditLogs={adminData.auditLogs}
             settings={adminData.settings}
             isLoading={adminData.isLoading}
             onSelectOrder={(ord) => setSelectedOrder(ord)}
@@ -124,5 +123,3 @@ const contentWrapperStyle = {
   gap: '14px',
   width: '100%'
 };
-
-

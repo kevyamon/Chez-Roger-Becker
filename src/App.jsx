@@ -1,6 +1,6 @@
 /**
  * Application principale Chez Roger Becker (App).
- * Orchestre le routage d'écran, le chargement de données et les modales de plats.
+ * Orchestre le routage d'écran, le chargement de données, la persistance de session et les modales.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -28,7 +28,7 @@ import { DriverDashboardPage } from './pages/driver/DriverDashboardPage';
 import { applyTheme } from './styles/theme';
 
 export function App() {
-  const { isAuthenticated, isAdmin, isDriver } = useAuth();
+  const { isAuthenticated, isAdmin, isDriver, isLoading: isAuthLoading } = useAuth();
   const { addItem, setDeliveryFee } = useCart();
   const { showSuccess, showInfo } = useToast();
 
@@ -37,6 +37,8 @@ export function App() {
     if (path.includes('/admin') || path.includes('/dashboard') || path.includes('/backoffice')) {
       return 'notfound';
     }
+    const saved = sessionStorage.getItem('rb_active_tab');
+    if (saved) return saved;
     return 'home';
   });
 
@@ -47,6 +49,11 @@ export function App() {
   const [selectedDish, setSelectedDish] = useState(null);
   const [selectedDishQty, setSelectedDishQty] = useState(1);
   const [trackingToken, setTrackingToken] = useState(() => localStorage.getItem('rb_last_tracking_token'));
+
+  const handleNavigate = (tab) => {
+    setActiveTab(tab);
+    sessionStorage.setItem('rb_active_tab', tab);
+  };
 
   // Initialisation du thème sauvegardé
   useEffect(() => {
@@ -75,7 +82,7 @@ export function App() {
           }
         }
       } catch (err) {
-        console.warn('Échec du chargement initial:', err.message);
+        console.warn('Échec du chargement initial :', err.message);
       }
     };
 
@@ -164,7 +171,7 @@ export function App() {
   const handleOrderSuccess = (token) => {
     setTrackingToken(token);
     localStorage.setItem('rb_last_tracking_token', token);
-    setActiveTab('track');
+    handleNavigate('track');
   };
 
   const renderActiveScreen = () => {
@@ -176,7 +183,7 @@ export function App() {
             promotions={promotions}
             categories={categories}
             restaurant={restaurant}
-            onNavigate={setActiveTab}
+            onNavigate={handleNavigate}
             onSelectDish={handleSelectDish}
           />
         );
@@ -189,21 +196,28 @@ export function App() {
           />
         );
       case 'cart':
-        return <CartPage onNavigate={setActiveTab} />;
+        return <CartPage onNavigate={handleNavigate} />;
       case 'checkout':
-        return <CheckoutPage onNavigate={setActiveTab} onOrderSuccess={handleOrderSuccess} />;
+        return <CheckoutPage onNavigate={handleNavigate} onOrderSuccess={handleOrderSuccess} />;
       case 'track':
-        return <OrderTrackingPage trackingToken={trackingToken} onNavigate={setActiveTab} />;
+        return <OrderTrackingPage trackingToken={trackingToken} onNavigate={handleNavigate} />;
       case 'auth':
+        if (isAuthLoading && !isAuthenticated) {
+          return (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: 'var(--text-secondary)' }}>
+              Chargement de votre session...
+            </div>
+          );
+        }
         if (isAuthenticated) {
           if (isAdmin) return <AdminDashboardPage />;
           if (isDriver) return <DriverDashboardPage />;
         }
-        return <LoginPage onNavigate={setActiveTab} onLoginSuccess={() => setActiveTab('auth')} />;
+        return <LoginPage onNavigate={handleNavigate} onLoginSuccess={() => handleNavigate('auth')} />;
       case 'notfound':
-        return <NotFoundPage onNavigate={setActiveTab} />;
+        return <NotFoundPage onNavigate={handleNavigate} />;
       default:
-        return <HomePage onNavigate={setActiveTab} />;
+        return <HomePage onNavigate={handleNavigate} />;
     }
   };
 
@@ -212,13 +226,13 @@ export function App() {
   return (
     <div className="app-container">
       {!isProFlow && (
-        <Header restaurantInfo={restaurant} onOpenMenu={() => setActiveTab('menu')} />
+        <Header restaurantInfo={restaurant} onOpenMenu={() => handleNavigate('menu')} />
       )}
 
       <main style={{ flex: 1 }}>{renderActiveScreen()}</main>
 
       {!isProFlow && (
-        <TabBar activeTab={activeTab} onSelectTab={setActiveTab} />
+        <TabBar activeTab={activeTab} onSelectTab={handleNavigate} />
       )}
 
       <DishDetailModal
@@ -231,4 +245,3 @@ export function App() {
     </div>
   );
 }
-

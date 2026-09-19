@@ -8,7 +8,6 @@ import { AdminOrdersSection } from './AdminOrdersSection';
 import { AdminMenuSection } from './AdminMenuSection';
 import { AdminDriversSection } from './AdminDriversSection';
 import { AdminSettingsSection } from './AdminSettingsSection';
-import { AdminAuditSection } from './AdminAuditSection';
 
 export const AdminSectionRouter = ({
   activeSection,
@@ -17,7 +16,6 @@ export const AdminSectionRouter = ({
   dishes,
   categories,
   drivers,
-  auditLogs,
   settings,
   isLoading,
   onSelectOrder,
@@ -56,8 +54,6 @@ export const AdminSectionRouter = ({
       return <AdminDriversSection drivers={drivers} onCreateDriver={onCreateDriver} isLoading={isLoading} />;
     case 'settings':
       return <AdminSettingsSection settings={settings} onSaveSettings={onSaveSettings} isLoading={isLoading} />;
-    case 'audit':
-      return <AdminAuditSection auditLogs={auditLogs} isLoading={isLoading} />;
     default:
       return <AdminKpiSection dashboardData={dashboardData} onSelectOrder={onSelectOrder} />;
   }

@@ -1,5 +1,6 @@
 /**
  * Contexte d'authentification pour les espaces Administrateur et Livreur.
+ * Maintient la persistance synchrone du profil pour éviter les déconnexions intempestives lors des actualisations.
  */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
@@ -8,7 +9,15 @@ import { apiClient } from '../services/api';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem('rb_user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch {
+      return null;
+    }
+  });
+
   const [token, setToken] = useState(() => localStorage.getItem('rb_access_token'));
   const [isLoading, setIsLoading] = useState(true);
 
@@ -20,6 +29,7 @@ export const AuthProvider = ({ children }) => {
           const res = await apiClient.get('/auth/me');
           if (res.success && res.data?.user) {
             setUser(res.data.user);
+            localStorage.setItem('rb_user', JSON.stringify(res.data.user));
           } else {
             logout();
           }
@@ -40,9 +50,10 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
       setToken(accessToken);
       localStorage.setItem('rb_access_token', accessToken);
+      localStorage.setItem('rb_user', JSON.stringify(userData));
       return userData;
     }
-    throw new Error(res.message || 'Echec de connexion');
+    throw new Error(res.message || 'Échec de connexion');
   };
 
   const registerAdmin = async ({ name, email, phone, password, privateKey }) => {
@@ -58,6 +69,7 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
       setToken(accessToken);
       localStorage.setItem('rb_access_token', accessToken);
+      localStorage.setItem('rb_user', JSON.stringify(userData));
       return userData;
     }
     throw new Error(res.message || 'Échec de l\'inscription administrateur.');
@@ -69,11 +81,13 @@ export const AuthProvider = ({ children }) => {
         await apiClient.post('/auth/logout');
       }
     } catch {
-      // Ignorer les erreurs reseau lors du logout
+      // Ignorer les erreurs réseau lors du logout
     } finally {
       setUser(null);
       setToken(null);
       localStorage.removeItem('rb_access_token');
+      localStorage.removeItem('rb_user');
+      sessionStorage.removeItem('rb_active_tab');
     }
   };
 
@@ -99,7 +113,7 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth doit etre utilise au sein de AuthProvider');
+    throw new Error('useAuth doit être utilisé au sein de AuthProvider');
   }
   return context;
 };

@@ -10,8 +10,7 @@ import {
   UtensilsCrossed,
   Tag,
   Bike,
-  Sliders,
-  History
+  Sliders
 } from 'lucide-react';
 
 export const AdminNavTabs = ({ activeSection, onSelectSection, pendingOrdersCount = 0 }) => {
@@ -21,8 +20,7 @@ export const AdminNavTabs = ({ activeSection, onSelectSection, pendingOrdersCoun
     { id: 'menu', label: 'Menu & Plats', icon: UtensilsCrossed },
     { id: 'promos', label: 'Offres & Promos', icon: Tag },
     { id: 'drivers', label: 'Livreurs', icon: Bike },
-    { id: 'settings', label: 'Paramètres', icon: Sliders },
-    { id: 'audit', label: 'Audit Logs', icon: History }
+    { id: 'settings', label: 'Paramètres', icon: Sliders }
   ];
 
   return (

@@ -11,7 +11,6 @@ import {
   Tag,
   Bike,
   Sliders,
-  History,
   ChevronRight,
   ChevronLeft
 } from 'lucide-react';
@@ -27,8 +26,7 @@ export const AdminTabBar = ({ activeSection, onSelectSection, pendingOrdersCount
     { id: 'menu', label: 'Menu & Plats', icon: UtensilsCrossed },
     { id: 'promos', label: 'Offres', icon: Tag },
     { id: 'drivers', label: 'Livreurs', icon: Bike },
-    { id: 'settings', label: 'Paramètres', icon: Sliders },
-    { id: 'audit', label: 'Audit Logs', icon: History }
+    { id: 'settings', label: 'Paramètres', icon: Sliders }
   ];
 
   const updateScrollState = () => {
@@ -55,7 +53,6 @@ export const AdminTabBar = ({ activeSection, onSelectSection, pendingOrdersCount
     if (!scrollContainerRef.current) return;
     const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
     if (scrollLeft + clientWidth >= scrollWidth - 20) {
-      // Retour au début si on est à la fin
       scrollContainerRef.current.scrollTo({ left: 0, behavior: 'smooth' });
     } else {
       scrollContainerRef.current.scrollBy({ left: 140, behavior: 'smooth' });
