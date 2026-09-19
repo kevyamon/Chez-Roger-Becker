@@ -3,12 +3,13 @@
  */
 
 import React, { useEffect } from 'react';
-import { Bike, Phone, ArrowLeft, RefreshCw, MapPin, Store, AlertCircle } from 'lucide-react';
+import { Bike, Phone, ArrowLeft, RefreshCw, MapPin, Store } from 'lucide-react';
 import { socket, joinOrderRoom } from '../../../services/socket';
 import { MapPicker } from '../../../components/map/MapPicker';
 import { NotificationPermissionBanner } from '../../../components/ui/NotificationPermissionBanner';
 import { OrderTimelineCard } from './OrderTimelineCard';
 import { OrderItemsCard } from './OrderItemsCard';
+import { getOrderStatusLabel, getOrderStatusBadgeStyle } from '../../../utils/statusLabels';
 
 export const OrderDetailView = ({
   order,
@@ -107,7 +108,9 @@ export const OrderDetailView = ({
             <span style={labelStyle}>Numéro de commande</span>
             <h3 style={orderNumberStyle}>{order.orderNumber}</h3>
           </div>
-          <span style={statusBadgeStyle}>{order.status}</span>
+          <span style={{ ...getOrderStatusBadgeStyle(order.status), padding: '4px 10px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800 }}>
+            {getOrderStatusLabel(order.status)}
+          </span>
         </div>
       </div>
 
@@ -169,7 +172,6 @@ const closedBannerDescStyle = { fontSize: '0.8rem', color: 'var(--text-secondary
 const summaryCardStyle = { padding: '16px 18px' };
 const labelStyle = { fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' };
 const orderNumberStyle = { fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-primary)' };
-const statusBadgeStyle = { backgroundColor: 'var(--color-primary-surface)', color: 'var(--color-primary-dark)', padding: '4px 10px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800 };
 
 const sectionTitleStyle = { fontSize: '0.96rem', fontWeight: 800, color: 'var(--text-primary)' };
 const mapCardStyle = { padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' };
@@ -178,4 +180,4 @@ const addressTextStyle = { fontSize: '0.82rem', color: 'var(--text-secondary)', 
 
 const driverCardStyle = { padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' };
 const driverAvatarStyle = { width: '42px', height: '42px', borderRadius: '12px', backgroundColor: 'var(--color-secondary-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center' };
-const callBtnStyle = { display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: 'var(--color-accent)', color: 'var(--color-accent-contrast, #FFFFFF)', padding: '8px 14px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 700, textDecoration: 'none', boxShadow: '0 4px 10px rgba(2, 132, 199, 0.3)' };
+const callBtnStyle = { display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: 'var(--color-accent)', color: '#FFFFFF', padding: '8px 14px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 700, textDecoration: 'none', boxShadow: '0 4px 10px rgba(2, 132, 199, 0.3)' };

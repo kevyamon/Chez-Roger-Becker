@@ -7,6 +7,7 @@ import React from 'react';
 import { Bike, Navigation, Phone, CheckCircle2, Package } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 import { theme } from '../../../styles/theme';
+import { getOrderStatusLabel, getOrderStatusBadgeStyle } from '../../../utils/statusLabels';
 
 export const DriverActiveDeliveryCard = ({
   delivery,
@@ -17,7 +18,9 @@ export const DriverActiveDeliveryCard = ({
     <div className="card-surface" style={deliveryCardStyle}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={orderBadgeStyle}>#{delivery.orderNumber}</span>
-        <span style={statBadgeStyle}>{delivery.status}</span>
+        <span style={{ ...getOrderStatusBadgeStyle(delivery.status), fontSize: '0.72rem', fontWeight: 800, padding: '3px 8px', borderRadius: theme.radii.sm }}>
+          {getOrderStatusLabel(delivery.status)}
+        </span>
       </div>
 
       <div style={infoGroupStyle}>
@@ -105,15 +108,6 @@ const orderBadgeStyle = {
   color: 'var(--color-primary)'
 };
 
-const statBadgeStyle = {
-  fontSize: '0.72rem',
-  fontWeight: 800,
-  padding: '3px 8px',
-  borderRadius: theme.radii.sm,
-  backgroundColor: 'var(--color-accent-surface)',
-  color: 'var(--color-accent-dark)'
-};
-
 const infoGroupStyle = {
   display: 'flex',
   flexDirection: 'column',
@@ -132,7 +126,7 @@ const callBtnStyle = {
   justifyContent: 'center',
   gap: '6px',
   backgroundColor: 'var(--color-accent)',
-  color: 'var(--color-accent-contrast, #FFFFFF)',
+  color: '#FFFFFF',
   padding: '9px 12px',
   borderRadius: theme.radii.sm,
   fontSize: '0.82rem',

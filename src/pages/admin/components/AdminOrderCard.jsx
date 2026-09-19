@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { Phone, MapPin, Eye, Check } from 'lucide-react';
+import { getOrderStatusLabel, getOrderStatusBadgeStyle } from '../../../utils/statusLabels';
 
 export const AdminOrderCard = ({
   order,
@@ -22,11 +23,13 @@ export const AdminOrderCard = ({
             {new Date(order.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
           </p>
         </div>
-        <span style={statusBadgeStyle(order.status)}>{order.status}</span>
+        <span style={{ ...getOrderStatusBadgeStyle(order.status), fontSize: '0.72rem', fontWeight: 800, padding: '3px 8px', borderRadius: '6px' }}>
+          {getOrderStatusLabel(order.status)}
+        </span>
       </div>
 
       <div style={customerInfoStyle}>
-        <p style={customerNameStyle}>{order.customer?.firstName} {order.customer?.lastName}</p>
+        <p style={customerNameStyle}>{order.customer?.firstName} {order.customer?.lastName || order.customer?.name}</p>
         <div style={infoRowStyle}>
           <Phone size={13} color="var(--color-primary)" />
           <span>{order.customer?.phone}</span>
@@ -103,15 +106,6 @@ const dateStyle = {
   fontSize: '0.72rem',
   color: 'var(--text-muted)'
 };
-
-const statusBadgeStyle = (status) => ({
-  fontSize: '0.7rem',
-  fontWeight: 800,
-  padding: '3px 8px',
-  borderRadius: '6px',
-  backgroundColor: status === 'DELIVERED' ? 'var(--color-accent-surface)' : 'var(--color-primary-surface)',
-  color: status === 'DELIVERED' ? 'var(--color-accent-dark)' : 'var(--color-primary-dark)'
-});
 
 const customerInfoStyle = {
   display: 'flex',

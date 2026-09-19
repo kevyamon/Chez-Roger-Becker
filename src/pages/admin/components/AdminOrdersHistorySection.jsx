@@ -4,10 +4,11 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Search, Calendar, ChevronRight, PackageCheck, AlertCircle, RefreshCw } from 'lucide-react';
+import { Search, Calendar, ChevronRight, PackageCheck, RefreshCw } from 'lucide-react';
 import { apiClient } from '../../../services/api';
 import { AdminOrderDetailsModal } from './AdminOrderDetailsModal';
 import { theme } from '../../../styles/theme';
+import { getOrderStatusLabel, getOrderStatusBadgeStyle } from '../../../utils/statusLabels';
 
 export const AdminOrdersHistorySection = () => {
   const [orders, setOrders] = useState([]);
@@ -62,15 +63,15 @@ export const AdminOrdersHistorySection = () => {
           gap: '12px',
           alignItems: 'center',
           justifyContent: 'space-between',
-          backgroundColor: 'var(--bg-elevated, #FFFFFF)',
+          backgroundColor: 'var(--bg-elevated)',
           padding: '14px 16px',
           borderRadius: theme.radii.md,
-          border: '1px solid var(--border-color, #E2E8F0)'
+          border: '1px solid var(--border-color)'
         }}
       >
         <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '8px', flex: 1, minWidth: '240px' }}>
           <div style={inputWrapperStyle}>
-            <Search size={16} color="var(--text-muted, #94A3B8)" />
+            <Search size={16} color="var(--text-muted)" />
             <input
               type="text"
               placeholder="Rechercher par numéro ou client..."
@@ -86,7 +87,7 @@ export const AdminOrdersHistorySection = () => {
 
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <div style={inputWrapperStyle}>
-            <Calendar size={16} color="var(--text-muted, #94A3B8)" />
+            <Calendar size={16} color="var(--text-muted)" />
             <input
               type="date"
               value={dateFilter}
@@ -97,7 +98,7 @@ export const AdminOrdersHistorySection = () => {
               style={inputFieldStyle}
             />
           </div>
-          <button onClick={fetchHistory} style={iconButtonStyle} title="Actualiser">
+          <button onClick={fetchHistory} style={iconButtonStyle} title="Actualiser" aria-label="Actualiser">
             <RefreshCw size={16} />
           </button>
         </div>
@@ -105,16 +106,16 @@ export const AdminOrdersHistorySection = () => {
 
       {/* Liste des cartes compactes */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary, #475569)' }}>
+        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
           Chargement de l'historique...
         </div>
       ) : orders.length === 0 ? (
         <div style={emptyStateStyle}>
-          <PackageCheck size={36} color="var(--text-muted, #94A3B8)" />
-          <div style={{ fontWeight: 600, marginTop: '8px', color: 'var(--text-primary, #0F172A)' }}>
+          <PackageCheck size={36} color="var(--text-muted)" />
+          <div style={{ fontWeight: 600, marginTop: '8px', color: 'var(--text-primary)' }}>
             Aucune commande dans l'historique
           </div>
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary, #475569)' }}>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
             Les commandes livrées ou clôturées apparaîtront ici.
           </div>
         </div>
@@ -125,26 +126,26 @@ export const AdminOrdersHistorySection = () => {
               key={ord._id}
               onClick={() => setSelectedOrder(ord)}
               style={cardStyle}
-              onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--color-primary, #E65100)')}
-              onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border-color, #E2E8F0)')}
+              onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--color-primary)')}
+              onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border-color)')}
             >
               <div>
-                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary, #0F172A)' }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                   Commande #{ord.orderNumber}
                 </div>
-                <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--color-primary, #E65100)', marginTop: '4px' }}>
+                <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--color-primary)', marginTop: '4px' }}>
                   {Number(ord.total || 0).toLocaleString('fr-FR')} FCFA
                 </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #94A3B8)', marginTop: '2px' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
                   {new Date(ord.createdAt).toLocaleDateString('fr-FR')}
                 </div>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={ord.status === 'DELIVERED' ? deliveredBadgeStyle : cancelledBadgeStyle}>
-                  {ord.status === 'DELIVERED' ? 'Livrée' : 'Annulée'}
+                <span style={{ ...getOrderStatusBadgeStyle(ord.status), fontSize: '0.72rem', fontWeight: 700, padding: '3px 8px', borderRadius: theme.radii.full }}>
+                  {getOrderStatusLabel(ord.status)}
                 </span>
-                <ChevronRight size={18} color="var(--text-muted, #94A3B8)" />
+                <ChevronRight size={18} color="var(--text-muted)" />
               </div>
             </div>
           ))}
@@ -164,8 +165,8 @@ const inputWrapperStyle = {
   alignItems: 'center',
   gap: '8px',
   padding: '8px 12px',
-  backgroundColor: 'var(--bg-secondary, #F8FAFC)',
-  border: '1px solid var(--border-color, #E2E8F0)',
+  backgroundColor: 'var(--bg-secondary)',
+  border: '1px solid var(--border-color)',
   borderRadius: theme.radii.sm,
   flex: 1
 };
@@ -174,14 +175,14 @@ const inputFieldStyle = {
   border: 'none',
   background: 'transparent',
   outline: 'none',
-  color: 'var(--text-primary, #0F172A)',
+  color: 'var(--text-primary)',
   fontSize: '0.85rem',
   width: '100%'
 };
 
 const actionButtonStyle = {
   padding: '8px 16px',
-  backgroundColor: 'var(--color-primary, #E65100)',
+  backgroundColor: 'var(--color-primary)',
   color: '#FFFFFF',
   border: 'none',
   borderRadius: theme.radii.sm,
@@ -192,10 +193,10 @@ const actionButtonStyle = {
 
 const iconButtonStyle = {
   padding: '8px',
-  backgroundColor: 'var(--bg-secondary, #F8FAFC)',
-  border: '1px solid var(--border-color, #E2E8F0)',
+  backgroundColor: 'var(--bg-secondary)',
+  border: '1px solid var(--border-color)',
   borderRadius: theme.radii.sm,
-  color: 'var(--text-secondary, #475569)',
+  color: 'var(--text-secondary)',
   cursor: 'pointer',
   display: 'flex',
   alignItems: 'center',
@@ -204,10 +205,10 @@ const iconButtonStyle = {
 
 const cardStyle = {
   padding: '14px 16px',
-  backgroundColor: 'var(--bg-elevated, #FFFFFF)',
-  border: '1px solid var(--border-color, #E2E8F0)',
+  backgroundColor: 'var(--bg-elevated)',
+  border: '1px solid var(--border-color)',
   borderRadius: theme.radii.md,
-  boxShadow: 'var(--card-shadow, 0 4px 20px rgba(0,0,0,0.06))',
+  boxShadow: 'var(--card-shadow)',
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
@@ -215,30 +216,12 @@ const cardStyle = {
   transition: 'border-color 0.2s ease, transform 0.15s ease'
 };
 
-const deliveredBadgeStyle = {
-  fontSize: '0.72rem',
-  fontWeight: 700,
-  padding: '3px 8px',
-  borderRadius: theme.radii.full,
-  backgroundColor: 'rgba(22, 163, 74, 0.12)',
-  color: 'var(--status-success, #16A34A)'
-};
-
-const cancelledBadgeStyle = {
-  fontSize: '0.72rem',
-  fontWeight: 700,
-  padding: '3px 8px',
-  borderRadius: theme.radii.full,
-  backgroundColor: 'rgba(220, 38, 38, 0.12)',
-  color: 'var(--status-error, #DC2626)'
-};
-
 const emptyStateStyle = {
   padding: '48px 20px',
   textAlign: 'center',
-  backgroundColor: 'var(--bg-elevated, #FFFFFF)',
+  backgroundColor: 'var(--bg-elevated)',
   borderRadius: theme.radii.md,
-  border: '1px solid var(--border-color, #E2E8F0)',
+  border: '1px solid var(--border-color)',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center'

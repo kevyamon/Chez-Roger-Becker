@@ -1,6 +1,6 @@
 /**
  * Contexte global de gestion des notifications push (PushNotificationContext).
- * Fournit l'état d'abonnement et écoute les messages en premier plan.
+ * Fournit l'état d'abonnement et écoute les messages en premier plan avec cycle de vie sécurisé.
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
@@ -17,8 +17,11 @@ export const PushNotificationProvider = ({ children }) => {
   const [fcmToken, setFcmToken] = useState(null);
   const { showInfo, showSuccess } = useToast();
 
-  // Initialisation et vérification silencieuse si déjà autorisé
+  // Initialisation et gestion robuste de l'écouteur en premier plan
   useEffect(() => {
+    let isMounted = true;
+    let unsubscribeForeground = null;
+
     const status = pushNotificationService.getPermissionStatus();
     setPermissionStatus(status);
 
@@ -26,7 +29,7 @@ export const PushNotificationProvider = ({ children }) => {
       pushNotificationService
         .requestPermissionAndGetToken()
         .then((res) => {
-          if (res?.success) {
+          if (isMounted && res?.success) {
             setIsSubscribed(true);
             setFcmToken(res.token);
           }
@@ -34,18 +37,28 @@ export const PushNotificationProvider = ({ children }) => {
         .catch(() => {});
     }
 
-    // Écouteur des notifications reçues en premier plan
-    let unsubscribeForeground = () => {};
-    pushNotificationService.onForegroundMessage((payload) => {
-      const title = payload.notification?.title || payload.data?.title || 'Chez Roger Becker';
-      const body = payload.notification?.body || payload.data?.body || '';
-      showInfo(`${title} : ${body}`);
-    }).then((unsub) => {
-      if (typeof unsub === 'function') unsubscribeForeground = unsub;
-    });
+    // Enregistrement de l'écouteur de premier plan avec désabonnement sécurisé
+    pushNotificationService
+      .onForegroundMessage((payload) => {
+        if (!isMounted) return;
+        const title = payload.notification?.title || payload.data?.title || 'Chez Roger Becker';
+        const body = payload.notification?.body || payload.data?.body || '';
+        showInfo(`${title} : ${body}`);
+      })
+      .then((unsub) => {
+        if (!isMounted && typeof unsub === 'function') {
+          unsub();
+        } else if (typeof unsub === 'function') {
+          unsubscribeForeground = unsub;
+        }
+      })
+      .catch(() => {});
 
     return () => {
-      if (typeof unsubscribeForeground === 'function') unsubscribeForeground();
+      isMounted = false;
+      if (typeof unsubscribeForeground === 'function') {
+        unsubscribeForeground();
+      }
     };
   }, [showInfo]);
 

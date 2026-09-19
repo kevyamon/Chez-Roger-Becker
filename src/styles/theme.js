@@ -102,15 +102,15 @@ export const applyTheme = (isDark = false) => {
   root.style.setProperty('--color-primary', theme.colors.primary.main);
   root.style.setProperty('--color-primary-light', theme.colors.primary.light);
   root.style.setProperty('--color-primary-dark', theme.colors.primary.dark);
-  root.style.setProperty('--color-primary-surface', theme.colors.primary.surface);
+  root.style.setProperty('--color-primary-surface', isDark ? 'rgba(230, 81, 0, 0.18)' : theme.colors.primary.surface);
 
   root.style.setProperty('--color-secondary', theme.colors.secondary.main);
   root.style.setProperty('--color-secondary-light', theme.colors.secondary.light);
-  root.style.setProperty('--color-secondary-surface', theme.colors.secondary.surface);
+  root.style.setProperty('--color-secondary-surface', isDark ? 'rgba(217, 119, 6, 0.18)' : theme.colors.secondary.surface);
 
   root.style.setProperty('--color-accent', theme.colors.accent.main);
   root.style.setProperty('--color-accent-light', theme.colors.accent.light);
-  root.style.setProperty('--color-accent-surface', theme.colors.accent.surface);
+  root.style.setProperty('--color-accent-surface', isDark ? 'rgba(2, 132, 199, 0.18)' : theme.colors.accent.surface);
 
   // Injection des couleurs de statut
   root.style.setProperty('--status-success', theme.colors.status.success);

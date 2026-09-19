@@ -1,10 +1,10 @@
 /**
  * Sélecteur cartographique interactif avec géolocalisation GPS et Leaflet.
- * Respecte l'abstraction cartographique du cahier des charges.
+ * Intègre la résolution d'adresse automatique (Reverse Geocoding) lors des déplacements.
  */
 
-import React, { useEffect, useRef, useState } from 'react';
-import { MapPin, Navigation, Loader2 } from 'lucide-react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { Navigation, Loader2 } from 'lucide-react';
 import L from 'leaflet';
 
 export const MapPicker = ({ location, onLocationChange, readOnly = false }) => {
@@ -15,6 +15,39 @@ export const MapPicker = ({ location, onLocationChange, readOnly = false }) => {
 
   // Position par défaut : Abidjan, Côte d'Ivoire [lng, lat]
   const defaultCoords = [location?.coordinates?.[0] || -4.0083, location?.coordinates?.[1] || 5.3599];
+
+  const reverseGeocode = useCallback(async (lat, lng) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`,
+        { headers: { 'Accept-Language': 'fr' } }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.address) {
+          const addr = data.address;
+          const parts = [
+            addr.road || addr.pedestrian || addr.suburb || addr.neighbourhood,
+            addr.city || addr.town || addr.village || addr.county || 'Abidjan'
+          ].filter(Boolean);
+          return parts.length > 0 ? parts.join(', ') : data.display_name;
+        }
+      }
+    } catch {
+      // Échec silencieux, ne bloque pas la sélection
+    }
+    return null;
+  }, []);
+
+  const handlePositionSelected = useCallback(async (lng, lat) => {
+    if (!onLocationChange) return;
+    const resolvedAddress = await reverseGeocode(lat, lng);
+    onLocationChange({
+      type: 'Point',
+      coordinates: [lng, lat],
+      resolvedAddress: resolvedAddress || undefined
+    });
+  }, [onLocationChange, reverseGeocode]);
 
   useEffect(() => {
     if (!mapContainerRef.current) return;
@@ -48,12 +81,12 @@ export const MapPicker = ({ location, onLocationChange, readOnly = false }) => {
       if (!readOnly) {
         marker.on('dragend', () => {
           const pos = marker.getLatLng();
-          onLocationChange && onLocationChange({ type: 'Point', coordinates: [pos.lng, pos.lat] });
+          handlePositionSelected(pos.lng, pos.lat);
         });
 
         map.on('click', (e) => {
           marker.setLatLng(e.latlng);
-          onLocationChange && onLocationChange({ type: 'Point', coordinates: [e.latlng.lng, e.latlng.lat] });
+          handlePositionSelected(e.latlng.lng, e.latlng.lat);
         });
       }
 
@@ -73,12 +106,12 @@ export const MapPicker = ({ location, onLocationChange, readOnly = false }) => {
     if (!navigator.geolocation) return;
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         const { latitude, longitude } = pos.coords;
         if (mapInstanceRef.current && markerRef.current) {
           mapInstanceRef.current.setView([latitude, longitude], 16);
           markerRef.current.setLatLng([latitude, longitude]);
-          onLocationChange && onLocationChange({ type: 'Point', coordinates: [longitude, latitude] });
+          await handlePositionSelected(longitude, latitude);
         }
         setIsLocating(false);
       },
@@ -130,7 +163,7 @@ const gpsButtonStyle = {
   transform: 'translateX(-50%)',
   zIndex: 400,
   backgroundColor: 'var(--color-primary)',
-  color: 'var(--color-primary-contrast, #FFFFFF)',
+  color: '#FFFFFF',
   padding: '8px 16px',
   borderRadius: '9999px',
   fontSize: '0.8rem',
@@ -139,5 +172,7 @@ const gpsButtonStyle = {
   alignItems: 'center',
   gap: '8px',
   boxShadow: '0 4px 14px rgba(230, 81, 0, 0.4)',
-  whiteSpace: 'nowrap'
+  whiteSpace: 'nowrap',
+  border: 'none',
+  cursor: 'pointer'
 };

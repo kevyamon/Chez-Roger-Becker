@@ -1,10 +1,10 @@
 /**
  * Page de finalisation de commande sans compte (Checkout).
- * Parcours ultra-fluide : Nom/Téléphone -> Adresse/GPS -> Confirmation immédiate.
+ * Parcours fluide : Nom/Téléphone -> Adresse/GPS -> Confirmation immédiate.
  */
 
 import React, { useState } from 'react';
-import { User, MapPin, ArrowLeft } from 'lucide-react';
+import { User, MapPin, ArrowLeft, CheckCircle } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useToast } from '../../context/ToastContext';
 import { usePushNotification } from '../../context/PushNotificationContext';
@@ -29,10 +29,22 @@ export const CheckoutPage = ({ onNavigate, onOrderSuccess }) => {
     coordinates: [-4.0083, 5.3599] // Abidjan par défaut
   });
 
+  const [gpsSynced, setGpsSynced] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleLocationChange = (newLocation) => {
+    setLocation(newLocation);
+    if (newLocation.resolvedAddress) {
+      setFormData((prev) => ({
+        ...prev,
+        address: newLocation.resolvedAddress
+      }));
+      setGpsSynced(true);
+    }
   };
 
   const handleSubmitOrder = async (e) => {
@@ -70,7 +82,6 @@ export const CheckoutPage = ({ onNavigate, onOrderSuccess }) => {
       if (res.success && res.data?.order) {
         const createdOrder = res.data.order;
 
-        // Enregistrement automatique dans l'historique local du navigateur
         try {
           const historyItem = {
             trackingToken: createdOrder.trackingToken,
@@ -87,10 +98,9 @@ export const CheckoutPage = ({ onNavigate, onOrderSuccess }) => {
           );
           localStorage.setItem('rb_orders_history', JSON.stringify([historyItem, ...filtered].slice(0, 30)));
         } catch (e) {
-          console.warn('Erreur de sauvegarde locale de la commande:', e);
+          console.warn('Erreur de sauvegarde locale de la commande :', e);
         }
 
-        // Association automatique du push pour les alertes de cette commande
         if (createdOrder.trackingToken) {
           linkOrderToPush(createdOrder.trackingToken);
         }
@@ -178,8 +188,15 @@ export const CheckoutPage = ({ onNavigate, onOrderSuccess }) => {
             />
           </div>
 
-          <label style={{ ...labelStyle, marginTop: '8px' }}>Position GPS sur la carte (glissez le repère)</label>
-          <MapPicker location={location} onLocationChange={setLocation} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
+            <label style={labelStyle}>Position GPS sur la carte (glissez le repère)</label>
+            {gpsSynced && (
+              <span style={gpsSyncedBadgeStyle}>
+                <CheckCircle size={12} /> Position GPS synchronisée
+              </span>
+            )}
+          </div>
+          <MapPicker location={location} onLocationChange={handleLocationChange} />
         </div>
 
         {/* ÉTAPE 3 : RÉCAPITULATIF FINANCIER & PAIEMENT */}
@@ -215,7 +232,10 @@ const backButtonStyle = {
   gap: '4px',
   fontSize: '0.86rem',
   fontWeight: 700,
-  color: 'var(--color-primary)'
+  color: 'var(--color-primary)',
+  background: 'none',
+  border: 'none',
+  cursor: 'pointer'
 };
 
 const pageTitleStyle = {
@@ -256,4 +276,16 @@ const labelStyle = {
   fontSize: '0.8rem',
   fontWeight: 700,
   color: 'var(--text-secondary)'
+};
+
+const gpsSyncedBadgeStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '4px',
+  fontSize: '0.72rem',
+  fontWeight: 700,
+  color: 'var(--status-success, #16A34A)',
+  backgroundColor: 'rgba(22, 163, 74, 0.12)',
+  padding: '2px 8px',
+  borderRadius: '9999px'
 };

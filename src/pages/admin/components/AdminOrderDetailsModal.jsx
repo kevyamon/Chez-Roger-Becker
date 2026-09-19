@@ -6,6 +6,7 @@
 import React from 'react';
 import { X, Clock, User, Phone, MapPin, Truck, CheckCircle, Package } from 'lucide-react';
 import { theme } from '../../../styles/theme';
+import { getOrderStatusLabel, getPaymentMethodLabel, getOrderStatusBadgeStyle } from '../../../utils/statusLabels';
 
 export const AdminOrderDetailsModal = ({ order, onClose }) => {
   if (!order) return null;
@@ -23,12 +24,15 @@ export const AdminOrderDetailsModal = ({ order, onClose }) => {
         <div style={headerStyle}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Package size={20} color="var(--color-primary, #E65100)" />
-              <h2 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: 'var(--text-primary, #0F172A)' }}>
+              <Package size={20} color="var(--color-primary)" />
+              <h2 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
                 Commande #{order.orderNumber}
               </h2>
+              <span style={{ ...getOrderStatusBadgeStyle(order.status), fontSize: '0.72rem', padding: '2px 8px', borderRadius: '6px' }}>
+                {getOrderStatusLabel(order.status)}
+              </span>
             </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted, #94A3B8)', marginTop: '4px' }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
               Reçue le {formatDate(order.createdAt)}
             </div>
           </div>
@@ -42,17 +46,17 @@ export const AdminOrderDetailsModal = ({ order, onClose }) => {
           {/* Section Montant & Paiement */}
           <div style={summaryCardStyle}>
             <div>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary, #475569)' }}>Montant Total :</span>
-              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-primary, #E65100)' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Montant Total :</span>
+              <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--color-primary)' }}>
                 {Number(order.total || 0).toLocaleString('fr-FR')} FCFA
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted, #94A3B8)' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                 Livraison : {Number(order.deliveryFee || 0).toLocaleString('fr-FR')} FCFA
               </span>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary, #0F172A)', marginTop: '2px' }}>
-                {order.payment?.method === 'CASH_ON_DELIVERY' ? 'Paiement à la livraison' : 'Paiement en ligne'}
+              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', marginTop: '2px' }}>
+                {getPaymentMethodLabel(order.payment?.method || order.paymentMethod)}
               </div>
             </div>
           </div>
@@ -63,12 +67,12 @@ export const AdminOrderDetailsModal = ({ order, onClose }) => {
               <div style={sectionTitleStyle}>
                 <User size={16} /> Client
               </div>
-              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary, #0F172A)' }}>
+              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                 {order.customer?.name}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', marginTop: '4px' }}>
-                <Phone size={14} color="var(--text-muted, #94A3B8)" />
-                <a href={`tel:${order.customer?.phone}`} style={{ color: 'var(--color-primary, #E65100)', textDecoration: 'none' }}>
+                <Phone size={14} color="var(--text-muted)" />
+                <a href={`tel:${order.customer?.phone}`} style={{ color: 'var(--color-primary)', textDecoration: 'none' }}>
                   {order.customer?.phone}
                 </a>
               </div>
@@ -78,11 +82,11 @@ export const AdminOrderDetailsModal = ({ order, onClose }) => {
               <div style={sectionTitleStyle}>
                 <MapPin size={16} /> Adresse de livraison
               </div>
-              <div style={{ fontSize: '0.88rem', color: 'var(--text-primary, #0F172A)' }}>
+              <div style={{ fontSize: '0.88rem', color: 'var(--text-primary)' }}>
                 {order.delivery?.address || 'Non spécifiée'}
               </div>
               {order.delivery?.note && (
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary, #475569)', marginTop: '4px', fontStyle: 'italic' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '4px', fontStyle: 'italic' }}>
                   Note : {order.delivery.note}
                 </div>
               )}
@@ -96,15 +100,15 @@ export const AdminOrderDetailsModal = ({ order, onClose }) => {
             </div>
             {order.driverId ? (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary, #0F172A)' }}>
+                <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                   {order.driverId.firstName} {order.driverId.lastName}
                 </span>
-                <a href={`tel:${order.driverId.phone}`} style={{ fontSize: '0.85rem', color: 'var(--color-primary, #E65100)', textDecoration: 'none' }}>
+                <a href={`tel:${order.driverId.phone}`} style={{ fontSize: '0.85rem', color: 'var(--color-primary)', textDecoration: 'none' }}>
                   {order.driverId.phone}
                 </a>
               </div>
             ) : (
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted, #94A3B8)' }}>Aucun livreur associé</span>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Aucun livreur associé</span>
             )}
           </div>
 
@@ -117,16 +121,16 @@ export const AdminOrderDetailsModal = ({ order, onClose }) => {
               {order.items?.map((item, idx) => (
                 <div key={idx} style={itemRowStyle}>
                   <div>
-                    <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary, #0F172A)' }}>
+                    <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
                       {item.quantity}x {item.name}
                     </span>
                     {item.selectedOptions?.length > 0 && (
-                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted, #94A3B8)' }}>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                         {item.selectedOptions.join(', ')}
                       </div>
                     )}
                   </div>
-                  <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary, #0F172A)' }}>
+                  <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
                     {Number(item.subtotal || 0).toLocaleString('fr-FR')} FCFA
                   </span>
                 </div>
@@ -142,16 +146,16 @@ export const AdminOrderDetailsModal = ({ order, onClose }) => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {order.statusHistory?.map((step, idx) => (
                 <div key={idx} style={stepRowStyle}>
-                  <CheckCircle size={14} color="var(--status-success, #16A34A)" />
+                  <CheckCircle size={14} color="var(--status-success)" />
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-primary, #0F172A)' }}>
-                      {step.status}
+                    <div style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {getOrderStatusLabel(step.status)}
                     </div>
                     {step.note && (
-                      <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary, #475569)' }}>{step.note}</div>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{step.note}</div>
                     )}
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, #94A3B8)' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     {formatDate(step.changedAt)}
                   </div>
                 </div>
@@ -180,7 +184,7 @@ const backdropStyle = {
 };
 
 const modalContainerStyle = {
-  backgroundColor: 'var(--bg-elevated, #FFFFFF)',
+  backgroundColor: 'var(--bg-elevated)',
   borderRadius: theme.radii.lg,
   maxWidth: '560px',
   width: '100%',
@@ -194,17 +198,17 @@ const modalContainerStyle = {
 
 const headerStyle = {
   padding: '16px 20px',
-  borderBottom: '1px solid var(--border-color, #E2E8F0)',
+  borderBottom: '1px solid var(--border-color)',
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  backgroundColor: 'var(--bg-card-header, rgba(0,0,0,0.02))'
+  backgroundColor: 'var(--bg-card-header)'
 };
 
 const closeButtonStyle = {
   background: 'none',
   border: 'none',
-  color: 'var(--text-muted, #94A3B8)',
+  color: 'var(--text-muted)',
   cursor: 'pointer',
   padding: '4px',
   display: 'flex',
@@ -222,12 +226,12 @@ const bodyStyle = {
 
 const summaryCardStyle = {
   padding: '14px 16px',
-  backgroundColor: 'var(--color-primary-surface, #FFF3E0)',
+  backgroundColor: 'var(--color-primary-surface)',
   borderRadius: theme.radii.md,
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  border: '1px solid var(--color-primary-light, #FF7A00)'
+  border: '1px solid var(--color-primary-light)'
 };
 
 const infoGridStyle = {
@@ -238,15 +242,15 @@ const infoGridStyle = {
 
 const sectionBoxStyle = {
   padding: '12px 14px',
-  backgroundColor: 'var(--bg-secondary, #F8FAFC)',
+  backgroundColor: 'var(--bg-secondary)',
   borderRadius: theme.radii.md,
-  border: '1px solid var(--border-color, #E2E8F0)'
+  border: '1px solid var(--border-color)'
 };
 
 const sectionTitleStyle = {
   fontSize: '0.8rem',
   fontWeight: 700,
-  color: 'var(--text-secondary, #475569)',
+  color: 'var(--text-secondary)',
   display: 'flex',
   alignItems: 'center',
   gap: '6px',
@@ -260,7 +264,7 @@ const itemRowStyle = {
   justifyContent: 'space-between',
   alignItems: 'center',
   padding: '6px 0',
-  borderBottom: '1px solid var(--border-color, #E2E8F0)'
+  borderBottom: '1px solid var(--border-color)'
 };
 
 const stepRowStyle = {
@@ -268,5 +272,5 @@ const stepRowStyle = {
   alignItems: 'flex-start',
   gap: '10px',
   padding: '6px 0',
-  borderBottom: '1px dashed var(--border-color, #E2E8F0)'
+  borderBottom: '1px dashed var(--border-color)'
 };
