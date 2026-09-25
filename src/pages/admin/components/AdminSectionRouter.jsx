@@ -1,11 +1,8 @@
-/**
- * Aiguilleur d'affichage des sections du dashboard administrateur (AdminSectionRouter).
- */
-
 import React from 'react';
 import { AdminKpiSection } from './AdminKpiSection';
 import { AdminOrdersSection } from './AdminOrdersSection';
 import { AdminMenuSection } from './AdminMenuSection';
+import { AdminPromotionsSection } from './AdminPromotionsSection';
 import { AdminDriversSection } from './AdminDriversSection';
 import { AdminSettingsSection } from './AdminSettingsSection';
 
@@ -17,7 +14,9 @@ export const AdminSectionRouter = ({
   categories,
   drivers,
   settings,
+  promotions = [],
   isLoading,
+  isLoadingPromos = false,
   onSelectOrder,
   onUpdateOrderStatus,
   onOpenCreateDish,
@@ -27,7 +26,10 @@ export const AdminSectionRouter = ({
   onCreateDriver,
   onUpdateDriver,
   onDeleteDriver,
-  onSaveSettings
+  onSaveSettings,
+  onSavePromotion,
+  onTogglePromotionStatus,
+  onDeletePromotion
 }) => {
   switch (activeSection) {
     case 'kpis':
@@ -53,6 +55,17 @@ export const AdminSectionRouter = ({
           isLoading={isLoading}
         />
       );
+    case 'promos':
+      return (
+        <AdminPromotionsSection
+          promotions={promotions}
+          dishes={dishes}
+          isLoading={isLoadingPromos}
+          onSavePromotion={onSavePromotion}
+          onToggleStatus={onTogglePromotionStatus}
+          onDeletePromotion={onDeletePromotion}
+        />
+      );
     case 'drivers':
       return (
         <AdminDriversSection
@@ -69,3 +82,4 @@ export const AdminSectionRouter = ({
       return <AdminKpiSection dashboardData={dashboardData} onSelectOrder={onSelectOrder} isLoading={isLoading} />;
   }
 };
+

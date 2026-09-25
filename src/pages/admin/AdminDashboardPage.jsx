@@ -6,6 +6,7 @@
 import React, { useEffect, useState } from 'react';
 import { applyTheme } from '../../styles/theme';
 import { useAdminData } from './hooks/useAdminData';
+import { useAdminPromotions } from './hooks/useAdminPromotions';
 
 import { AdminHeader } from './components/AdminHeader';
 import { AdminTabBar } from './components/AdminTabBar';
@@ -24,6 +25,7 @@ export const AdminDashboardPage = () => {
   const [selectedDish, setSelectedDish] = useState(null);
 
   const adminData = useAdminData();
+  const promoData = useAdminPromotions();
 
   const handleToggleTheme = () => {
     const nextDark = !isDark;
@@ -59,7 +61,9 @@ export const AdminDashboardPage = () => {
             categories={adminData.categories}
             drivers={adminData.drivers}
             settings={adminData.settings}
+            promotions={promoData.promotions}
             isLoading={adminData.isLoading}
+            isLoadingPromos={promoData.isLoading}
             onSelectOrder={(ord) => setSelectedOrder(ord)}
             onUpdateOrderStatus={adminData.updateOrderStatus}
             onOpenCreateDish={() => {
@@ -76,6 +80,9 @@ export const AdminDashboardPage = () => {
             onUpdateDriver={adminData.updateDriver}
             onDeleteDriver={adminData.deleteDriver}
             onSaveSettings={adminData.saveSettings}
+            onSavePromotion={promoData.savePromotion}
+            onTogglePromotionStatus={promoData.togglePromotionStatus}
+            onDeletePromotion={promoData.deletePromotion}
           />
         </main>
       </div>

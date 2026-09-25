@@ -8,6 +8,8 @@ import { ArrowRight, Clock, MapPin, Phone } from 'lucide-react';
 import { DishCard } from '../../components/menu/DishCard';
 import { Button } from '../../components/ui/Button';
 import { AnimatedHeroSlogan } from '../../components/ui/AnimatedHeroSlogan';
+import { PromoPopupModal } from '../../components/ui/PromoPopupModal';
+import { HomePromoBanner } from './components/HomePromoBanner';
 import bgHeroImg from '../../assets/images/bg.png';
 
 export const HomePage = ({
@@ -20,10 +22,32 @@ export const HomePage = ({
   const availableDishes = dishes.filter((d) => d.isAvailable !== false);
   const featured = availableDishes.filter((d) => d.isFeatured);
   const popularDishes = featured.length > 0 ? featured.slice(0, 6) : availableDishes.slice(0, 6);
-  const activePromo = promotions[0];
+  const activePromo = promotions.find((p) => p && p.isActive !== false);
+
+  const handlePromoAction = (promo) => {
+    if (!promo) return;
+    if (promo.dishId) {
+      const target = typeof promo.dishId === 'object' ? promo.dishId : dishes.find((d) => d._id === promo.dishId);
+      if (target && onSelectDish) onSelectDish(target);
+      else onNavigate('menu');
+    } else if (promo.link?.startsWith('http')) {
+      window.open(promo.link, '_blank', 'noopener,noreferrer');
+    } else if (promo.link) {
+      onNavigate(promo.link.replace(/^\//, '') || 'menu');
+    } else {
+      onNavigate('menu');
+    }
+  };
 
   return (
     <div className="animate-fade-in" style={pageStyle}>
+      {/* Pop-up publicitaire automatique d'accueil */}
+      <PromoPopupModal
+        promotions={promotions}
+        onNavigate={onNavigate}
+        onSelectDish={onSelectDish}
+      />
+
       {/* 1. HERO BANNER */}
       <section style={heroStyle}>
         <div style={heroOverlayStyle}>
@@ -46,25 +70,7 @@ export const HomePage = ({
       </section>
 
       {/* 2. OFFRE SPÉCIALE DU MOMENT */}
-      {activePromo && (
-        <section style={promoSectionStyle}>
-          <div className="card-surface" style={promoCardStyle}>
-            <div style={promoHeaderStyle}>
-              <span style={promoTagStyle}>Offre Exclusive</span>
-              <h3 style={promoTitleStyle}>{activePromo.title}</h3>
-              <p style={promoDescStyle}>{activePromo.description}</p>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => onNavigate('menu')}
-                style={{ marginTop: '10px' }}
-              >
-                En profiter
-              </Button>
-            </div>
-          </div>
-        </section>
-      )}
+      <HomePromoBanner promo={activePromo} onAction={handlePromoAction} />
 
       {/* 3. PLATS POPULAIRES */}
       <section style={sectionStyle}>
@@ -143,40 +149,6 @@ const heroTitleStyle = {
 const heroActionsStyle = {
   display: 'flex',
   gap: '10px'
-};
-
-const promoSectionStyle = {
-  padding: '0 16px'
-};
-
-const promoCardStyle = {
-  padding: '18px',
-  background: 'linear-gradient(135deg, var(--color-primary-surface) 0%, var(--color-secondary-surface) 100%)',
-  border: '1.5px solid var(--color-secondary-light)'
-};
-
-const promoHeaderStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '4px'
-};
-
-const promoTagStyle = {
-  fontSize: '0.72rem',
-  fontWeight: 800,
-  color: 'var(--color-primary-dark)',
-  textTransform: 'uppercase'
-};
-
-const promoTitleStyle = {
-  fontSize: '1.15rem',
-  fontWeight: 800,
-  color: 'var(--text-primary)'
-};
-
-const promoDescStyle = {
-  fontSize: '0.84rem',
-  color: 'var(--text-secondary)'
 };
 
 const sectionStyle = {
