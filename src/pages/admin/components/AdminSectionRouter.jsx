@@ -31,7 +31,7 @@ export const AdminSectionRouter = ({
 }) => {
   switch (activeSection) {
     case 'kpis':
-      return <AdminKpiSection dashboardData={dashboardData} onSelectOrder={onSelectOrder} />;
+      return <AdminKpiSection dashboardData={dashboardData} onSelectOrder={onSelectOrder} isLoading={isLoading} />;
     case 'orders':
       return (
         <AdminOrdersSection
@@ -50,6 +50,7 @@ export const AdminSectionRouter = ({
           onOpenEditDish={onOpenEditDish}
           onToggleAvailability={onToggleAvailability}
           onDeleteDish={onDeleteDish}
+          isLoading={isLoading}
         />
       );
     case 'drivers':
@@ -65,6 +66,6 @@ export const AdminSectionRouter = ({
     case 'settings':
       return <AdminSettingsSection settings={settings} onSaveSettings={onSaveSettings} isLoading={isLoading} />;
     default:
-      return <AdminKpiSection dashboardData={dashboardData} onSelectOrder={onSelectOrder} />;
+      return <AdminKpiSection dashboardData={dashboardData} onSelectOrder={onSelectOrder} isLoading={isLoading} />;
   }
 };

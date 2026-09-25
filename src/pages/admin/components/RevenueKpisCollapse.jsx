@@ -5,8 +5,9 @@
 
 import React, { useState } from 'react';
 import { DollarSign, TrendingUp, ShoppingBag, Clock, ChevronDown, ChevronUp, Eye, EyeOff } from 'lucide-react';
+import { Skeleton } from '../../../components/ui/Skeleton';
 
-export const RevenueKpisCollapse = ({ kpi = {} }) => {
+export const RevenueKpisCollapse = ({ kpi = {}, isLoading = false }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const formatPrice = (amount) => `${Number(amount || 0).toLocaleString('fr-FR')} FCFA`;
@@ -57,7 +58,11 @@ export const RevenueKpisCollapse = ({ kpi = {} }) => {
             </div>
             <div style={kpiContentStyle}>
               <span style={kpiLabelStyle}>Revenus du Jour</span>
-              <h3 style={kpiValueStyle}>{formatPrice(kpi.revenueToday)}</h3>
+              {isLoading ? (
+                <Skeleton width="90px" height="18px" />
+              ) : (
+                <h3 style={kpiValueStyle}>{formatPrice(kpi.revenueToday)}</h3>
+              )}
             </div>
           </div>
 
@@ -67,7 +72,11 @@ export const RevenueKpisCollapse = ({ kpi = {} }) => {
             </div>
             <div style={kpiContentStyle}>
               <span style={kpiLabelStyle}>Revenus Semaine</span>
-              <h3 style={kpiValueStyle}>{formatPrice(kpi.revenueWeek)}</h3>
+              {isLoading ? (
+                <Skeleton width="90px" height="18px" />
+              ) : (
+                <h3 style={kpiValueStyle}>{formatPrice(kpi.revenueWeek)}</h3>
+              )}
             </div>
           </div>
 
@@ -77,7 +86,11 @@ export const RevenueKpisCollapse = ({ kpi = {} }) => {
             </div>
             <div style={kpiContentStyle}>
               <span style={kpiLabelStyle}>Commandes du Jour</span>
-              <h3 style={kpiValueStyle}>{kpi.ordersToday || 0}</h3>
+              {isLoading ? (
+                <Skeleton width="45px" height="18px" />
+              ) : (
+                <h3 style={kpiValueStyle}>{kpi.ordersToday || 0}</h3>
+              )}
             </div>
           </div>
 
@@ -87,7 +100,11 @@ export const RevenueKpisCollapse = ({ kpi = {} }) => {
             </div>
             <div style={kpiContentStyle}>
               <span style={kpiLabelStyle}>En Cours</span>
-              <h3 style={kpiValueStyle}>{(kpi.preparingCount || 0) + (kpi.inDeliveryCount || 0)}</h3>
+              {isLoading ? (
+                <Skeleton width="45px" height="18px" />
+              ) : (
+                <h3 style={kpiValueStyle}>{(kpi.preparingCount || 0) + (kpi.inDeliveryCount || 0)}</h3>
+              )}
             </div>
           </div>
         </div>

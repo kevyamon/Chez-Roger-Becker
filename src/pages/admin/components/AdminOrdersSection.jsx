@@ -1,17 +1,18 @@
 /**
  * Section Gestion des Commandes en direct (AdminOrdersSection).
- * Filtrage par statut, recherche et affichage paginé sécurisé.
+ * Filtrage par statut, recherche, skeletons de chargement et affichage optimisé.
  */
 
 import React, { useState } from 'react';
 import { Search, Clock } from 'lucide-react';
 import { AdminOrderCard } from './AdminOrderCard';
+import { Skeleton } from '../../../components/ui/Skeleton';
 
 export const AdminOrdersSection = ({
   orders = [],
   onUpdateStatus,
   onSelectOrder,
-  isLoading
+  isLoading = false
 }) => {
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -67,9 +68,26 @@ export const AdminOrdersSection = ({
         </div>
       </div>
 
-      {/* 2. Liste des commandes */}
+      {/* 2. Liste des commandes ou Skeletons */}
       {isLoading ? (
-        <p style={messageStyle}>Chargement des commandes en cours...</p>
+        <div style={ordersGridStyle}>
+          {[1, 2, 3].map((idx) => (
+            <div key={idx} className="card-surface" style={skeletonOrderCardStyle}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Skeleton width="110px" height="18px" />
+                <Skeleton width="80px" height="20px" borderRadius="6px" />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '6px' }}>
+                <Skeleton width="60%" height="14px" />
+                <Skeleton width="40%" height="12px" />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid var(--border-color)' }}>
+                <Skeleton width="70px" height="16px" />
+                <Skeleton width="95px" height="28px" borderRadius="8px" />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : filteredOrders.length === 0 ? (
         <div className="card-surface" style={emptyCardStyle}>
           <Clock size={32} color="var(--text-muted)" />
@@ -159,6 +177,14 @@ const ordersGridStyle = {
   display: 'flex',
   flexDirection: 'column',
   gap: '10px'
+};
+
+const skeletonOrderCardStyle = {
+  padding: '14px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '10px',
+  borderRadius: '12px'
 };
 
 const emptyCardStyle = {

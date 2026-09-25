@@ -1,12 +1,13 @@
 /**
  * Section Gestion du Menu & Catalogue (AdminMenuSection).
- * Affichage des plats, filtres combinés Type & Catégorie, recherche et gestion.
+ * Affichage des plats, filtres combinés, recherche et skeletons de chargement.
  */
 
 import React, { useState, useMemo } from 'react';
 import { Plus, Search } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 import { AdminDishCard } from './AdminDishCard';
+import { Skeleton } from '../../../components/ui/Skeleton';
 
 const TYPE_FILTERS = ['TOUS', 'Nourriture', 'Boisson'];
 const CATEGORY_FILTERS = ['TOUTES', 'Normal', 'VIP', 'Spécial'];
@@ -16,7 +17,8 @@ export const AdminMenuSection = ({
   onOpenCreateDish,
   onOpenEditDish,
   onToggleAvailability,
-  onDeleteDish
+  onDeleteDish,
+  isLoading = false
 }) => {
   const [selectedType, setSelectedType] = useState('TOUS');
   const [selectedCategory, setSelectedCategory] = useState('TOUTES');
@@ -60,7 +62,7 @@ export const AdminMenuSection = ({
           </Button>
         </div>
 
-        {/* 2. Filtres par Type (Nourriture / Boisson) */}
+        {/* 2. Filtres par Type */}
         <div style={filtersRowStyle}>
           <span style={filterLabelStyle}>Type :</span>
           <div style={filterPillsWrapStyle}>
@@ -77,7 +79,7 @@ export const AdminMenuSection = ({
           </div>
         </div>
 
-        {/* 3. Filtres par Catégorie (Normal, VIP, Spécial) */}
+        {/* 3. Filtres par Catégorie */}
         <div style={filtersRowStyle}>
           <span style={filterLabelStyle}>Catégorie :</span>
           <div style={filterPillsWrapStyle}>
@@ -95,8 +97,29 @@ export const AdminMenuSection = ({
         </div>
       </div>
 
-      {/* 4. Liste des plats filtrés */}
-      {filteredDishes.length === 0 ? (
+      {/* 4. Liste des plats filtrés ou Skeletons */}
+      {isLoading ? (
+        <div style={dishesListStyle}>
+          {[1, 2, 3].map((idx) => (
+            <div key={idx} className="card-surface" style={skeletonDishCardStyle}>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <Skeleton width="80px" height="80px" borderRadius="12px" style={{ flexShrink: 0 }} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Skeleton width="60%" height="16px" />
+                    <Skeleton width="50px" height="18px" borderRadius="6px" />
+                  </div>
+                  <Skeleton width="90%" height="12px" />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
+                    <Skeleton width="75px" height="16px" />
+                    <Skeleton width="70px" height="24px" borderRadius="6px" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : filteredDishes.length === 0 ? (
         <div className="card-surface" style={emptyCardStyle}>
           <p style={emptyTextStyle}>Aucun plat ou boisson trouvé avec ces filtres.</p>
         </div>
@@ -210,6 +233,11 @@ const dishesListStyle = {
   display: 'flex',
   flexDirection: 'column',
   gap: '10px'
+};
+
+const skeletonDishCardStyle = {
+  padding: '12px',
+  borderRadius: '16px'
 };
 
 const emptyCardStyle = {

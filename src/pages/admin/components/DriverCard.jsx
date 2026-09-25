@@ -1,10 +1,10 @@
 /**
- * Carte individuelle affichant les détails d'un livreur et son statut pour l'Administrateur.
+ * Carte individuelle affichant les détails d'un livreur et son statut pour l'Administrateur (DriverCard).
  * Permet d'éditer le livreur, réinitialiser son mot de passe ou le supprimer.
  */
 
 import React, { useState } from 'react';
-import { Bike, Phone, Mail, Edit2, Trash2, Key, Check, X, ShieldAlert } from 'lucide-react';
+import { Bike, Phone, Mail, Edit2, Trash2, Key, Check, X } from 'lucide-react';
 import { getDriverStatusLabel } from '../../../constants/statusLabels';
 
 export const DriverCard = ({ driver, onUpdateDriver, onDeleteDriver }) => {
@@ -63,18 +63,10 @@ export const DriverCard = ({ driver, onUpdateDriver, onDeleteDriver }) => {
           <span style={{ ...statusBadgeStyle, backgroundColor: badge.bg, color: badge.color }}>
             {getDriverStatusLabel(driver.driverStatus)}
           </span>
-          <button
-            onClick={() => setIsEditing(!isEditing)}
-            style={actionIconBtnStyle}
-            title="Modifier le livreur"
-          >
+          <button onClick={() => setIsEditing(!isEditing)} style={actionIconBtnStyle} title="Modifier le livreur">
             <Edit2 size={15} color="var(--color-primary)" />
           </button>
-          <button
-            onClick={() => onDeleteDriver(driver._id)}
-            style={actionIconBtnStyle}
-            title="Supprimer le livreur"
-          >
+          <button onClick={() => onDeleteDriver(driver._id)} style={actionIconBtnStyle} title="Supprimer le livreur">
             <Trash2 size={15} color="var(--status-error)" />
           </button>
         </div>
@@ -83,68 +75,24 @@ export const DriverCard = ({ driver, onUpdateDriver, onDeleteDriver }) => {
       {isEditing ? (
         <div style={editFormStyle}>
           <div style={twoColsStyle}>
-            <input
-              type="text"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              placeholder="Prénom"
-              style={inputStyle}
-            />
-            <input
-              type="text"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              placeholder="Nom"
-              style={inputStyle}
-            />
+            <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Prénom" style={inputStyle} />
+            <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Nom" style={inputStyle} />
           </div>
-
           <div style={twoColsStyle}>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="Téléphone"
-              style={inputStyle}
-            />
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="E-mail"
-              style={inputStyle}
-            />
+            <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Téléphone" style={inputStyle} />
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="E-mail" style={inputStyle} />
           </div>
-
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <Key size={14} color="var(--color-primary)" />
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Réinitialiser le mot de passe / code"
-              style={{ ...inputStyle, flex: 1 }}
-            />
+            <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Nouveau mot de passe" style={{ ...inputStyle, flex: 1 }} />
           </div>
-
-          <div style={statusCheckStyle}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={isActive}
-                onChange={(e) => setIsActive(e.target.checked)}
-              />
-              Compte actif et autorisé à livrer
-            </label>
-          </div>
-
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--text-primary)', cursor: 'pointer', padding: '4px 0' }}>
+            <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+            Compte actif et autorisé à livrer
+          </label>
           <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '4px' }}>
-            <button onClick={() => setIsEditing(false)} style={cancelBtnStyle}>
-              <X size={14} /> Annuler
-            </button>
-            <button onClick={handleSave} style={saveBtnStyle}>
-              <Check size={14} /> Enregistrer
-            </button>
+            <button onClick={() => setIsEditing(false)} style={cancelBtnStyle}><X size={14} /> Annuler</button>
+            <button onClick={handleSave} style={saveBtnStyle}><Check size={14} /> Enregistrer</button>
           </div>
         </div>
       ) : (
@@ -163,134 +111,18 @@ export const DriverCard = ({ driver, onUpdateDriver, onDeleteDriver }) => {
   );
 };
 
-const driverCardStyle = {
-  padding: '14px',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '10px',
-  borderRadius: '12px'
-};
-
-const driverHeaderStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  flexWrap: 'wrap',
-  gap: '8px'
-};
-
-const driverNameWrapStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '10px'
-};
-
-const avatarStyle = {
-  width: '36px',
-  height: '36px',
-  borderRadius: '10px',
-  backgroundColor: 'var(--color-primary-surface, rgba(230, 81, 0, 0.12))',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center'
-};
-
-const driverNameStyle = {
-  fontSize: '0.9rem',
-  fontWeight: 800,
-  color: 'var(--text-primary)'
-};
-
-const statusBadgeStyle = {
-  fontSize: '0.7rem',
-  fontWeight: 800,
-  padding: '3px 8px',
-  borderRadius: '6px'
-};
-
-const actionIconBtnStyle = {
-  padding: '6px',
-  background: 'none',
-  border: 'none',
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center'
-};
-
-const driverDetailsStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '4px',
-  paddingTop: '8px',
-  borderTop: '1px solid var(--border-color)'
-};
-
-const infoRowStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '6px',
-  fontSize: '0.78rem',
-  color: 'var(--text-secondary)'
-};
-
-const linkStyle = {
-  color: 'var(--color-primary)',
-  fontWeight: 700,
-  textDecoration: 'none'
-};
-
-const editFormStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '8px',
-  paddingTop: '8px',
-  borderTop: '1px solid var(--border-color)'
-};
-
-const twoColsStyle = {
-  display: 'grid',
-  gridTemplateColumns: '1fr 1fr',
-  gap: '8px'
-};
-
-const inputStyle = {
-  padding: '7px 10px',
-  borderRadius: '6px',
-  border: '1px solid var(--border-color)',
-  backgroundColor: 'var(--bg-elevated)',
-  color: 'var(--text-primary)',
-  fontSize: '0.8rem',
-  outline: 'none'
-};
-
-const statusCheckStyle = {
-  padding: '4px 0'
-};
-
-const saveBtnStyle = {
-  padding: '6px 12px',
-  backgroundColor: 'var(--color-primary)',
-  color: '#FFFFFF',
-  border: 'none',
-  borderRadius: '6px',
-  fontSize: '0.78rem',
-  fontWeight: 700,
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '4px'
-};
-
-const cancelBtnStyle = {
-  padding: '6px 12px',
-  backgroundColor: 'transparent',
-  color: 'var(--text-secondary)',
-  border: '1px solid var(--border-color)',
-  borderRadius: '6px',
-  fontSize: '0.78rem',
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '4px'
-};
+const driverCardStyle = { padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px', borderRadius: '12px' };
+const driverHeaderStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' };
+const driverNameWrapStyle = { display: 'flex', alignItems: 'center', gap: '10px' };
+const avatarStyle = { width: '36px', height: '36px', borderRadius: '10px', backgroundColor: 'var(--color-primary-surface, rgba(230, 81, 0, 0.12))', display: 'flex', alignItems: 'center', justifyContent: 'center' };
+const driverNameStyle = { fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)' };
+const statusBadgeStyle = { fontSize: '0.7rem', fontWeight: 800, padding: '3px 8px', borderRadius: '6px' };
+const actionIconBtnStyle = { padding: '6px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' };
+const driverDetailsStyle = { display: 'flex', flexDirection: 'column', gap: '4px', paddingTop: '8px', borderTop: '1px solid var(--border-color)' };
+const infoRowStyle = { display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--text-secondary)' };
+const linkStyle = { color: 'var(--color-primary)', fontWeight: 700, textDecoration: 'none' };
+const editFormStyle = { display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '8px', borderTop: '1px solid var(--border-color)' };
+const twoColsStyle = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' };
+const inputStyle = { padding: '7px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-elevated)', color: 'var(--text-primary)', fontSize: '0.8rem', outline: 'none' };
+const saveBtnStyle = { padding: '6px 12px', backgroundColor: 'var(--color-primary)', color: '#FFFFFF', border: 'none', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' };
+const cancelBtnStyle = { padding: '6px 12px', backgroundColor: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius: '6px', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' };

@@ -1,16 +1,17 @@
 /**
  * Section Configuration et Paramètres du Restaurant (AdminSettingsSection).
- * Modifie les horaires, l'adresse, les frais de livraison et les messages d'état.
+ * Modifie les horaires, l'adresse, les frais de livraison avec état squelette.
  */
 
 import React, { useState, useEffect } from 'react';
 import { Save, Clock, MapPin, Phone, DollarSign, Store } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
+import { Skeleton } from '../../../components/ui/Skeleton';
 
 export const AdminSettingsSection = ({
   settings,
   onSaveSettings,
-  isLoading
+  isLoading = false
 }) => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -42,6 +43,8 @@ export const AdminSettingsSection = ({
     });
   };
 
+  const showSkeleton = isLoading && !settings;
+
   return (
     <div style={containerStyle}>
       <div className="card-surface" style={cardStyle}>
@@ -50,28 +53,85 @@ export const AdminSettingsSection = ({
           <h3 style={titleStyle}>Paramètres Généraux du Restaurant</h3>
         </div>
 
-        <form onSubmit={handleSubmit} style={formStyle}>
-          <div style={fieldGroupStyle}>
-            <label style={labelStyle}>Nom de l'établissement</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              style={inputStyle}
-            />
+        {showSkeleton ? (
+          <div style={formStyle}>
+            <div style={fieldGroupStyle}>
+              <Skeleton width="140px" height="14px" />
+              <Skeleton width="100%" height="40px" borderRadius="8px" />
+            </div>
+            <div style={twoColsStyle}>
+              <div style={fieldGroupStyle}>
+                <Skeleton width="120px" height="14px" />
+                <Skeleton width="100%" height="40px" borderRadius="8px" />
+              </div>
+              <div style={fieldGroupStyle}>
+                <Skeleton width="120px" height="14px" />
+                <Skeleton width="100%" height="40px" borderRadius="8px" />
+              </div>
+            </div>
+            <div style={fieldGroupStyle}>
+              <Skeleton width="160px" height="14px" />
+              <Skeleton width="100%" height="40px" borderRadius="8px" />
+            </div>
+            <div style={fieldGroupStyle}>
+              <Skeleton width="130px" height="14px" />
+              <Skeleton width="100%" height="40px" borderRadius="8px" />
+            </div>
+            <Skeleton width="100%" height="46px" borderRadius="12px" style={{ marginTop: '8px' }} />
           </div>
+        ) : (
+          <form onSubmit={handleSubmit} style={formStyle}>
+            <div style={fieldGroupStyle}>
+              <label style={labelStyle}>Nom de l'établissement</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                style={inputStyle}
+              />
+            </div>
 
-          <div style={twoColsStyle}>
+            <div style={twoColsStyle}>
+              <div style={fieldGroupStyle}>
+                <label style={labelStyle}>
+                  <Phone size={13} style={{ display: 'inline', marginRight: '4px' }} />
+                  Numéro de téléphone
+                </label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                  style={inputStyle}
+                />
+              </div>
+
+              <div style={fieldGroupStyle}>
+                <label style={labelStyle}>
+                  <DollarSign size={13} style={{ display: 'inline', marginRight: '4px' }} />
+                  Frais de livraison (FCFA)
+                </label>
+                <input
+                  type="number"
+                  value={deliveryFee}
+                  onChange={(e) => setDeliveryFee(e.target.value)}
+                  required
+                  min="0"
+                  style={inputStyle}
+                />
+              </div>
+            </div>
+
             <div style={fieldGroupStyle}>
               <label style={labelStyle}>
-                <Phone size={13} style={{ display: 'inline', marginRight: '4px' }} />
-                Numéro de téléphone
+                <MapPin size={13} style={{ display: 'inline', marginRight: '4px' }} />
+                Adresse géographique complète
               </label>
               <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                type="text"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
                 required
                 style={inputStyle}
               />
@@ -79,69 +139,40 @@ export const AdminSettingsSection = ({
 
             <div style={fieldGroupStyle}>
               <label style={labelStyle}>
-                <DollarSign size={13} style={{ display: 'inline', marginRight: '4px' }} />
-                Frais de livraison (FCFA)
+                <Clock size={13} style={{ display: 'inline', marginRight: '4px' }} />
+                Horaires d'ouverture
               </label>
               <input
-                type="number"
-                value={deliveryFee}
-                onChange={(e) => setDeliveryFee(e.target.value)}
+                type="text"
+                value={openingHours}
+                onChange={(e) => setOpeningHours(e.target.value)}
                 required
-                min="0"
                 style={inputStyle}
               />
             </div>
-          </div>
 
-          <div style={fieldGroupStyle}>
-            <label style={labelStyle}>
-              <MapPin size={13} style={{ display: 'inline', marginRight: '4px' }} />
-              Adresse géographique complète
-            </label>
-            <input
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              required
-              style={inputStyle}
-            />
-          </div>
+            <div style={fieldGroupStyle}>
+              <label style={labelStyle}>Message affiché lors de la fermeture</label>
+              <textarea
+                value={closedMessage}
+                onChange={(e) => setClosedMessage(e.target.value)}
+                rows={2}
+                style={textareaStyle}
+              />
+            </div>
 
-          <div style={fieldGroupStyle}>
-            <label style={labelStyle}>
-              <Clock size={13} style={{ display: 'inline', marginRight: '4px' }} />
-              Horaires d'ouverture
-            </label>
-            <input
-              type="text"
-              value={openingHours}
-              onChange={(e) => setOpeningHours(e.target.value)}
-              required
-              style={inputStyle}
-            />
-          </div>
-
-          <div style={fieldGroupStyle}>
-            <label style={labelStyle}>Message affiché lors de la fermeture</label>
-            <textarea
-              value={closedMessage}
-              onChange={(e) => setClosedMessage(e.target.value)}
-              rows={2}
-              style={textareaStyle}
-            />
-          </div>
-
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            icon={Save}
-            isLoading={isLoading}
-            style={{ marginTop: '8px' }}
-          >
-            Enregistrer les paramètres
-          </Button>
-        </form>
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              icon={Save}
+              isLoading={isLoading}
+              style={{ marginTop: '8px' }}
+            >
+              Enregistrer les paramètres
+            </Button>
+          </form>
+        )}
       </div>
     </div>
   );

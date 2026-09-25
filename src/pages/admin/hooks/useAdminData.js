@@ -1,8 +1,9 @@
 /**
- * Hook personnalisé de gestion et synchronisation des données administratives (useAdminData).
+ * Hook personnalisé de synchronisation des données administratives (useAdminData).
+ * Chargement résilient via Promise.allSettled et écoute en temps réel Socket.IO.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../../../services/api';
 import { socket, joinAdminRoom } from '../../../services/socket';
 import { useToast } from '../../../context/ToastContext';
@@ -10,7 +11,7 @@ import { useToast } from '../../../context/ToastContext';
 export const useAdminData = () => {
   const { showSuccess, showError, showInfo } = useToast();
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isUpdatingStore, setIsUpdatingStore] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
   const [settings, setSettings] = useState(null);
@@ -19,10 +20,10 @@ export const useAdminData = () => {
   const [categories, setCategories] = useState([]);
   const [drivers, setDrivers] = useState([]);
 
-  const fetchAllAdminData = async () => {
+  const fetchAllAdminData = useCallback(async () => {
     try {
       setIsLoading(true);
-      const [dashRes, setRes, ordersRes, dishesRes, catRes, driversRes] = await Promise.all([
+      const results = await Promise.allSettled([
         apiClient.get('/admin/dashboard'),
         apiClient.get('/admin/settings'),
         apiClient.get('/admin/orders'),
@@ -31,26 +32,49 @@ export const useAdminData = () => {
         apiClient.get('/admin/drivers')
       ]);
 
-      if (dashRes.success) setDashboardData(dashRes.data);
-      if (setRes.success) setSettings(setRes.data?.settings || setRes.data);
-      if (ordersRes.success) setOrders(ordersRes.data?.items || ordersRes.data || []);
-      if (dishesRes.success) setDishes(dishesRes.data?.items || dishesRes.data || []);
-      if (catRes.success) setCategories(catRes.data?.categories || catRes.data || []);
-      if (driversRes.success) setDrivers(driversRes.data?.drivers || driversRes.data || []);
+      const [dashRes, setRes, ordersRes, dishesRes, catRes, driversRes] = results;
+
+      if (dashRes.status === 'fulfilled' && dashRes.value?.success) {
+        setDashboardData(dashRes.value.data);
+      }
+      if (setRes.status === 'fulfilled' && setRes.value?.success) {
+        setSettings(setRes.value.data?.settings || setRes.value.data);
+      }
+      if (ordersRes.status === 'fulfilled' && ordersRes.value?.success) {
+        setOrders(ordersRes.value.data?.items || ordersRes.value.data || []);
+      }
+      if (dishesRes.status === 'fulfilled' && dishesRes.value?.success) {
+        setDishes(dishesRes.value.data?.items || dishesRes.value.data || []);
+      }
+      if (catRes.status === 'fulfilled' && catRes.value?.success) {
+        setCategories(catRes.value.data?.categories || catRes.value.data || []);
+      }
+      if (driversRes.status === 'fulfilled' && driversRes.value?.success) {
+        const dData = driversRes.value.data;
+        const dList = Array.isArray(dData?.drivers)
+          ? dData.drivers
+          : Array.isArray(dData)
+          ? dData
+          : Array.isArray(driversRes.value?.drivers)
+          ? driversRes.value.drivers
+          : [];
+        setDrivers(dList);
+      }
     } catch (err) {
-      showError(err.message || 'Erreur de chargement des données.');
+      showError(err.message || 'Erreur lors de la synchronisation des données.');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [showError]);
 
   useEffect(() => {
     fetchAllAdminData();
     joinAdminRoom();
 
     const onOrderCreated = (newOrder) => {
+      if (!newOrder?._id) return;
       setOrders((prev) => [newOrder, ...prev.filter((o) => o._id !== newOrder._id)]);
-      showInfo(`Nouvelle commande : #${newOrder.orderNumber} (${newOrder.total?.toLocaleString('fr-FR')} FCFA)`);
+      showInfo(`Nouvelle commande : #${newOrder.orderNumber}`);
       setDashboardData((prev) => {
         if (!prev) return prev;
         return {
@@ -64,13 +88,9 @@ export const useAdminData = () => {
       });
     };
 
-    const onOrderStatusChanged = (updated) => {
+    const onOrderStatusChanged = (upd) => {
       setOrders((prev) =>
-        prev.map((o) =>
-          o._id === updated.orderId || o.orderNumber === updated.orderNumber
-            ? { ...o, status: updated.status, statusHistory: updated.statusHistory || o.statusHistory }
-            : o
-        )
+        prev.map((o) => (o._id === upd.orderId || o.orderNumber === upd.orderNumber ? { ...o, ...upd } : o))
       );
     };
 
@@ -78,16 +98,44 @@ export const useAdminData = () => {
       setSettings((prev) => (prev ? { ...prev, ...upd } : upd));
     };
 
+    const onDriverCreated = (d) => {
+      if (!d?._id) return;
+      setDrivers((prev) => [d, ...prev.filter((item) => item._id !== d._id)]);
+    };
+
+    const onDriverUpdated = (d) => {
+      if (!d?._id) return;
+      setDrivers((prev) => prev.map((item) => (item._id === d._id ? { ...item, ...d } : item)));
+    };
+
+    const onDriverStatusChanged = ({ driverId, status }) => {
+      if (!driverId) return;
+      setDrivers((prev) => prev.map((d) => (d._id === driverId ? { ...d, driverStatus: status } : d)));
+    };
+
+    const onDriverDeleted = ({ driverId }) => {
+      if (!driverId) return;
+      setDrivers((prev) => prev.filter((d) => d._id !== driverId));
+    };
+
     socket.on('order:created', onOrderCreated);
     socket.on('order:status-changed', onOrderStatusChanged);
     socket.on('restaurant:updated', onRestaurantUpdated);
+    socket.on('driver:created', onDriverCreated);
+    socket.on('driver:updated', onDriverUpdated);
+    socket.on('driver:status-changed', onDriverStatusChanged);
+    socket.on('driver:deleted', onDriverDeleted);
 
     return () => {
       socket.off('order:created', onOrderCreated);
       socket.off('order:status-changed', onOrderStatusChanged);
       socket.off('restaurant:updated', onRestaurantUpdated);
+      socket.off('driver:created', onDriverCreated);
+      socket.off('driver:updated', onDriverUpdated);
+      socket.off('driver:status-changed', onDriverStatusChanged);
+      socket.off('driver:deleted', onDriverDeleted);
     };
-  }, []);
+  }, [fetchAllAdminData, showInfo]);
 
   const toggleStoreStatus = async () => {
     try {
@@ -109,9 +157,7 @@ export const useAdminData = () => {
     try {
       const res = await apiClient.patch(`/admin/orders/${orderId}/status`, { status: newStatus, note });
       if (res.success) {
-        setOrders((prev) =>
-          prev.map((o) => (o._id === orderId ? { ...o, status: newStatus } : o))
-        );
+        setOrders((prev) => prev.map((o) => (o._id === orderId ? { ...o, status: newStatus } : o)));
         showSuccess(`Statut mis à jour : ${newStatus}`);
       }
     } catch (err) {
@@ -147,9 +193,7 @@ export const useAdminData = () => {
     try {
       const res = await apiClient.patch(`/admin/dishes/${dishId}/availability`, { isAvailable: !currentAvailability });
       if (res.success) {
-        setDishes((prev) =>
-          prev.map((d) => (d._id === dishId ? { ...d, isAvailable: !currentAvailability } : d))
-        );
+        setDishes((prev) => prev.map((d) => (d._id === dishId ? { ...d, isAvailable: !currentAvailability } : d)));
         showSuccess(`Plat ${!currentAvailability ? 'marqué comme disponible' : 'marqué comme épuisé'}.`);
       }
     } catch (err) {
@@ -171,11 +215,14 @@ export const useAdminData = () => {
     try {
       const res = await apiClient.post('/admin/drivers', driverData);
       if (res.success && res.data?.driver) {
-        setDrivers((prev) => [res.data.driver, ...prev]);
+        setDrivers((prev) => [res.data.driver, ...prev.filter((d) => d._id !== res.data.driver._id)]);
         showSuccess('Compte livreur créé avec succès.');
+        return true;
       }
+      return false;
     } catch (err) {
       showError(err.message || 'Échec de création du livreur.');
+      return false;
     }
   };
 
@@ -183,11 +230,14 @@ export const useAdminData = () => {
     try {
       const res = await apiClient.patch(`/admin/drivers/${driverId}`, updateData);
       if (res.success && res.data?.driver) {
-        setDrivers((prev) => prev.map((d) => (d._id === driverId ? res.data.driver : d)));
+        setDrivers((prev) => prev.map((d) => (d._id === driverId ? { ...d, ...res.data.driver } : d)));
         showSuccess('Compte livreur mis à jour avec succès.');
+        return true;
       }
+      return false;
     } catch (err) {
       showError(err.message || 'Échec de mise à jour du livreur.');
+      return false;
     }
   };
 
@@ -197,9 +247,12 @@ export const useAdminData = () => {
       if (res.success) {
         setDrivers((prev) => prev.filter((d) => d._id !== driverId));
         showSuccess('Livreur supprimé avec succès.');
+        return true;
       }
+      return false;
     } catch (err) {
       showError(err.message || 'Échec de suppression du livreur.');
+      return false;
     }
   };
 
@@ -209,9 +262,12 @@ export const useAdminData = () => {
       if (res.success) {
         setSettings(res.data?.settings || res.data);
         showSuccess('Paramètres du restaurant mis à jour.');
+        return true;
       }
+      return false;
     } catch (err) {
       showError(err.message || 'Erreur lors de la sauvegarde des paramètres.');
+      return false;
     }
   };
 
@@ -224,6 +280,7 @@ export const useAdminData = () => {
     dishes,
     categories,
     drivers,
+    fetchAllAdminData,
     toggleStoreStatus,
     updateOrderStatus,
     saveDish,
