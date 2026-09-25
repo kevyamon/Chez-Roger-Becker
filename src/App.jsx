@@ -11,6 +11,7 @@ import { useCart } from './context/CartContext';
 import { useToast } from './context/ToastContext';
 import { useAppStartup } from './hooks/useAppStartup';
 import { storageAdapter } from './utils/storageAdapter';
+import { getOrderStatusLabel } from './utils/statusLabels';
 
 // Composants Layout & UI
 import { Header } from './components/layout/Header';
@@ -126,7 +127,7 @@ export function App() {
         if (match) {
           const updated = history.map((o) => (o.trackingToken === data.trackingToken || o.orderNumber === data.orderNumber ? { ...o, status: data.status } : o));
           localStorage.setItem('rb_orders_history', JSON.stringify(updated));
-          showInfo(`Votre commande #${data.orderNumber || match.orderNumber} : ${data.status}`);
+          showInfo(`Votre commande #${data.orderNumber || match.orderNumber} : ${getOrderStatusLabel(data.status)}`);
         }
       } catch {
         // Ignorer erreur JSON

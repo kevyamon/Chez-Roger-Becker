@@ -7,6 +7,7 @@ import React from 'react';
 import { Hourglass, ChefHat, Bike, CheckCircle2, XCircle } from 'lucide-react';
 import { RevenueKpisCollapse } from './RevenueKpisCollapse';
 import { Skeleton } from '../../../components/ui/Skeleton';
+import { getOrderStatusLabel, getOrderStatusBadgeStyle } from '../../../utils/statusLabels';
 
 export const AdminKpiSection = ({ dashboardData, onSelectOrder, isLoading = false }) => {
   const kpi = dashboardData?.kpi || {};
@@ -116,7 +117,9 @@ export const AdminKpiSection = ({ dashboardData, onSelectOrder, isLoading = fals
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <strong style={orderPriceStyle}>{formatPrice(ord.total)}</strong>
-                  <span style={orderBadgeStyle(ord.status)}>{ord.status}</span>
+                  <span style={{ ...getOrderStatusBadgeStyle(ord.status), ...recentOrderBadgeStyle }}>
+                    {getOrderStatusLabel(ord.status)}
+                  </span>
                 </div>
               </div>
             ))}
@@ -229,12 +232,10 @@ const orderPriceStyle = {
   display: 'block'
 };
 
-const orderBadgeStyle = (status) => ({
+const recentOrderBadgeStyle = {
   display: 'inline-block',
   fontSize: '0.68rem',
   fontWeight: 700,
-  padding: '2px 6px',
-  borderRadius: '6px',
-  backgroundColor: status === 'DELIVERED' ? 'var(--color-accent-surface)' : 'var(--color-primary-surface)',
-  color: status === 'DELIVERED' ? 'var(--color-accent-dark)' : 'var(--color-primary-dark)'
-});
+  padding: '2px 8px',
+  borderRadius: '6px'
+};
