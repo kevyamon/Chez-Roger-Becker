@@ -104,11 +104,15 @@ export const useAdminData = () => {
   const toggleStoreStatus = async () => {
     try {
       setIsUpdatingStore(true);
-      const newStatus = !settings?.isOpen;
-      const res = await apiClient.patch('/admin/restaurant/toggle-status', { isOpen: newStatus });
-      if (res.success) {
-        setSettings((prev) => ({ ...prev, isOpen: newStatus }));
-        showSuccess(`Restaurant ${newStatus ? 'ouvert' : 'fermé'} avec succès.`);
+      const isCurrentlyOpen = settings?.isEffectivelyOpen !== undefined
+        ? Boolean(settings.isEffectivelyOpen)
+        : Boolean(settings?.isOpen !== false);
+      const newStatus = !isCurrentlyOpen;
+      const res = await apiClient.patch('/admin/settings', { isOpen: newStatus });
+      if (res.success && (res.data?.settings || res.data)) {
+        const updated = res.data.settings || res.data;
+        setSettings((prev) => ({ ...prev, ...updated }));
+        showSuccess(`Restaurant ${updated.isEffectivelyOpen !== undefined ? (updated.isEffectivelyOpen ? 'ouvert' : 'fermé') : (newStatus ? 'ouvert' : 'fermé')} avec succès.`);
       }
     } catch (err) {
       showError(err.message || 'Impossible de modifier le statut du restaurant.');

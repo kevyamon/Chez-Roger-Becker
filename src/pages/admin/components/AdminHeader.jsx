@@ -87,12 +87,12 @@ export const AdminHeader = ({
           disabled={isUpdatingStore}
           style={{
             ...toggleButtonStyle,
-            backgroundColor: isManuallyOpen ? 'var(--status-error)' : 'var(--status-success)',
+            backgroundColor: isEffectivelyOpen ? 'var(--status-error)' : 'var(--status-success)',
             opacity: isUpdatingStore ? 0.7 : 1
           }}
         >
           <Power size={14} />
-          {isManuallyOpen ? 'Fermer le restaurant' : 'Ouvrir le restaurant'}
+          {isEffectivelyOpen ? 'Fermer le restaurant' : 'Ouvrir le restaurant'}
         </button>
       </div>
     </header>
