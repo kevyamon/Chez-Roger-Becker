@@ -173,7 +173,7 @@ export const Header = ({ restaurantInfo, onNavigate }) => {
       <div style={actionsContainerStyle}>
         {isAdmin && onNavigate && (
           <button
-            onClick={() => onNavigate('auth')}
+            onClick={() => onNavigate('auth-admin')}
             style={badgeAdminStyle}
             title="Accéder au tableau de bord administrateur"
           >
@@ -182,7 +182,7 @@ export const Header = ({ restaurantInfo, onNavigate }) => {
         )}
         {isDriver && onNavigate && (
           <button
-            onClick={() => onNavigate('auth')}
+            onClick={() => onNavigate('driver-login')}
             style={badgeDriverStyle}
             title="Accéder au tableau de bord livreur"
           >
@@ -191,7 +191,7 @@ export const Header = ({ restaurantInfo, onNavigate }) => {
         )}
         {!isAdmin && !isDriver && onNavigate && (
           <button
-            onClick={() => onNavigate('auth')}
+            onClick={() => onNavigate('driver-login')}
             style={espaceLivreurBtnStyle}
             title="Accéder à l'espace livreur"
           >

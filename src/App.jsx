@@ -207,7 +207,9 @@ export function App() {
         return <CheckoutPage onNavigate={handleNavigate} onOrderSuccess={handleOrderSuccess} />;
       case 'track':
         return <OrderTrackingPage trackingToken={trackingToken} onNavigate={handleNavigate} />;
-      case 'auth':
+      case 'auth-admin':
+      case 'driver-login':
+      case 'auth': {
         if (isAuthLoading && !isAuthenticated) {
           return (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: 'var(--text-secondary)' }}>
@@ -219,7 +221,9 @@ export function App() {
           if (isAdmin) return <AdminDashboardPage />;
           if (isDriver) return <DriverDashboardPage />;
         }
-        return <LoginPage onNavigate={handleNavigate} onLoginSuccess={() => handleNavigate('auth')} />;
+        const targetRole = activeTab === 'driver-login' ? 'driver' : 'admin';
+        return <LoginPage authRole={targetRole} onNavigate={handleNavigate} onLoginSuccess={() => handleNavigate(activeTab)} />;
+      }
       case 'notfound':
         return <NotFoundPage onNavigate={handleNavigate} />;
       default:
@@ -227,7 +231,7 @@ export function App() {
     }
   };
 
-  const isProFlow = activeTab === 'auth' || activeTab === 'notfound';
+  const isProFlow = ['auth', 'auth-admin', 'driver-login', 'notfound'].includes(activeTab);
 
   return (
     <div className="app-container">

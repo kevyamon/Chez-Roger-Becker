@@ -10,12 +10,14 @@ import { useToast } from '../../context/ToastContext';
 import { LoginForm } from './components/LoginForm';
 import { RegisterAdminForm } from './components/RegisterAdminForm';
 
-export const LoginPage = ({ onNavigate, onLoginSuccess }) => {
+export const LoginPage = ({ authRole = 'admin', onNavigate, onLoginSuccess }) => {
   const { login, registerAdmin } = useAuth();
   const { showError, showSuccess } = useToast();
 
   const [mode, setMode] = useState('login'); // 'login' | 'register'
   const [isLoading, setIsLoading] = useState(false);
+
+  const isDriverPortal = authRole === 'driver';
 
   const handleLogin = async ({ identifier, password }) => {
     if (!identifier || !password) {
@@ -62,35 +64,55 @@ export const LoginPage = ({ onNavigate, onLoginSuccess }) => {
 
       <div className="card-surface" style={cardStyle}>
         <div style={headerStyle}>
-          <div style={iconBadgeStyle}>
-            <Lock size={22} color="var(--color-primary-text, #FFFFFF)" />
+          <div
+            style={{
+              ...iconBadgeStyle,
+              backgroundColor: isDriverPortal
+                ? 'var(--color-secondary, #E65100)'
+                : 'var(--color-primary)'
+            }}
+          >
+            {isDriverPortal ? (
+              <Bike size={24} color="#FFFFFF" />
+            ) : (
+              <Lock size={22} color="#FFFFFF" />
+            )}
           </div>
-          <h2 style={titleStyle}>Espace Professionnel</h2>
+
+          <h2 style={titleStyle}>
+            {isDriverPortal ? 'Espace Livreur' : 'Espace Administration'}
+          </h2>
+
           <p style={subtitleStyle}>
-            {mode === 'login'
-              ? 'Connexion sécurisée pour les administrateurs et les livreurs officiels.'
-              : 'Création sécurisée d\'un nouveau compte administrateur.'}
+            {isDriverPortal
+              ? 'Portail de connexion réservé exclusivement aux livreurs partenaires.'
+              : mode === 'login'
+              ? 'Accès sécurisé réservé à la direction et aux administrateurs du restaurant.'
+              : 'Création sécurisée d\'un nouveau compte administrateur avec clé privée.'}
           </p>
 
-          <div style={tabSwitcherStyle}>
-            <button
-              type="button"
-              onClick={() => setMode('login')}
-              style={mode === 'login' ? activeTabStyle : inactiveTabStyle}
-            >
-              Connexion (Admin / Livreur)
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('register')}
-              style={mode === 'register' ? activeTabStyle : inactiveTabStyle}
-            >
-              Créer compte Admin
-            </button>
-          </div>
+          {/* Onglets visibles UNIQUEMENT pour les administrateurs (geste secret) */}
+          {!isDriverPortal && (
+            <div style={tabSwitcherStyle}>
+              <button
+                type="button"
+                onClick={() => setMode('login')}
+                style={mode === 'login' ? activeTabStyle : inactiveTabStyle}
+              >
+                Connexion Admin
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode('register')}
+                style={mode === 'register' ? activeTabStyle : inactiveTabStyle}
+              >
+                Créer compte Admin
+              </button>
+            </div>
+          )}
         </div>
 
-        {mode === 'login' ? (
+        {isDriverPortal || mode === 'login' ? (
           <LoginForm onSubmit={handleLogin} isLoading={isLoading} />
         ) : (
           <RegisterAdminForm onSubmit={handleRegister} isLoading={isLoading} />

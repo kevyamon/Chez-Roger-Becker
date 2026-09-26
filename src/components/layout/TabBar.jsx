@@ -15,12 +15,11 @@ export const TabBar = ({ activeTab, onSelectTab }) => {
   const [isPressing, setIsPressing] = useState(false);
 
   // References de detection haute precision
-  const lastTapTimestampRef = useRef(0);
   const activePointerIdRef = useRef(null);
   const animationFrameRef = useRef(null);
   const holdStartTimeRef = useRef(null);
   const isSecretTriggeredRef = useRef(false);
-  const HOLD_DURATION_MS = 10000; // 10 secondes
+  const HOLD_DURATION_MS = 5000; // 5 secondes de maintien direct
 
   const tabs = [
     { id: 'home', label: 'Accueil', icon: Home },
@@ -61,14 +60,13 @@ export const TabBar = ({ activeTab, onSelectTab }) => {
     setProgress(currentProgress);
 
     if (elapsed >= HOLD_DURATION_MS) {
-      // 10 secondes atteintes : declenchement certain
+      // 5 secondes atteintes : declenchement secret du portail administration
       isSecretTriggeredRef.current = true;
       if (navigator.vibrate) {
         navigator.vibrate([100, 50, 100]);
       }
-      onSelectTab('auth');
+      onSelectTab('auth-admin');
       resetAll();
-      lastTapTimestampRef.current = 0;
 
       setTimeout(() => {
         isSecretTriggeredRef.current = false;
@@ -78,7 +76,7 @@ export const TabBar = ({ activeTab, onSelectTab }) => {
     }
   };
 
-  // Demarrage de l'appui sur Accueil
+  // Demarrage du maintien direct sur Accueil (longpress 5s)
   const handleHomePointerDown = (e) => {
     if (isSecretTriggeredRef.current) return;
 
@@ -89,20 +87,10 @@ export const TabBar = ({ activeTab, onSelectTab }) => {
       }
     } catch {}
 
-    const now = Date.now();
-    const timeSinceLastTap = now - lastTapTimestampRef.current;
-
-    // Double-tap : intervalle entre 50ms et 800ms
-    if (timeSinceLastTap >= 50 && timeSinceLastTap <= 800) {
-      lastTapTimestampRef.current = 0;
-      setIsPressing(true);
-      holdStartTimeRef.current = Date.now();
-      cancelAnimation();
-      animationFrameRef.current = requestAnimationFrame(animateProgress);
-    } else {
-      lastTapTimestampRef.current = now;
-      resetAll();
-    }
+    setIsPressing(true);
+    holdStartTimeRef.current = Date.now();
+    cancelAnimation();
+    animationFrameRef.current = requestAnimationFrame(animateProgress);
   };
 
   // Relachement ou annulation
