@@ -4,12 +4,12 @@
  */
 
 import React, { useState } from 'react';
-import { User, MapPin, ArrowLeft, CheckCircle } from 'lucide-react';
+import { User, ArrowLeft } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useToast } from '../../context/ToastContext';
 import { usePushNotification } from '../../context/PushNotificationContext';
 import { apiClient } from '../../services/api';
-import { MapPicker } from '../../components/map/MapPicker';
+import { CheckoutAddressSection } from './components/CheckoutAddressSection';
 import { CheckoutSummaryCard } from './components/CheckoutSummaryCard';
 
 export const CheckoutPage = ({ onNavigate, onOrderSuccess }) => {
@@ -162,42 +162,13 @@ export const CheckoutPage = ({ onNavigate, onOrderSuccess }) => {
         </div>
 
         {/* ÉTAPE 2 : ADRESSE & GÉOLOCALISATION */}
-        <div className="card-surface" style={cardStyle}>
-          <h3 style={sectionHeadingStyle}>
-            <MapPin size={18} color="var(--color-primary)" /> 2. Lieu de Livraison
-          </h3>
-          <div style={inputGroupStyle}>
-            <label style={labelStyle}>Adresse / Quartier / Repère précis *</label>
-            <input
-              type="text"
-              name="address"
-              placeholder="Adresse ou repère précis de livraison"
-              value={formData.address}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div style={inputGroupStyle}>
-            <label style={labelStyle}>Instructions pour le livreur (Optionnel)</label>
-            <input
-              type="text"
-              name="note"
-              placeholder="Instructions pour le livreur (ex: sonnerie, étage)"
-              value={formData.note}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
-            <label style={labelStyle}>Position GPS sur la carte (glissez le repère)</label>
-            {gpsSynced && (
-              <span style={gpsSyncedBadgeStyle}>
-                <CheckCircle size={12} /> Position GPS synchronisée
-              </span>
-            )}
-          </div>
-          <MapPicker location={location} onLocationChange={handleLocationChange} />
-        </div>
+        <CheckoutAddressSection
+          formData={formData}
+          onChange={handleChange}
+          location={location}
+          onLocationChange={handleLocationChange}
+          gpsSynced={gpsSynced}
+        />
 
         {/* ÉTAPE 3 : RÉCAPITULATIF FINANCIER & PAIEMENT */}
         <CheckoutSummaryCard

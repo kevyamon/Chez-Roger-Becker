@@ -1,22 +1,28 @@
 /**
- * Sélecteur cartographique interactif avec géolocalisation GPS et Leaflet.
- * Intègre la résolution d'adresse automatique (Reverse Geocoding) lors des déplacements.
+ * Sélecteur cartographique interactif avec géolocalisation GPS et Leaflet (MapPicker).
+ * Reverse Geocoding multi-sources ultra-robuste adapté à Abidjan et la Côte d'Ivoire.
  */
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Navigation, Loader2 } from 'lucide-react';
 import L from 'leaflet';
+import { useToast } from '../../context/ToastContext';
 
 export const MapPicker = ({ location, onLocationChange, readOnly = false }) => {
+  const { showError, showSuccess } = useToast();
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markerRef = useRef(null);
   const [isLocating, setIsLocating] = useState(false);
 
-  // Position par défaut : Abidjan, Côte d'Ivoire [lng, lat]
+  // Coordonnées par défaut : Abidjan, Côte d'Ivoire [lng, lat]
   const defaultCoords = [location?.coordinates?.[0] || -4.0083, location?.coordinates?.[1] || 5.3599];
 
+  /**
+   * Résolution d'adresse en texte clair multi-sources (Nominatim + BigDataCloud).
+   */
   const reverseGeocode = useCallback(async (lat, lng) => {
+    // 1. Source primaire : OpenStreetMap Nominatim
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`,
@@ -24,29 +30,59 @@ export const MapPicker = ({ location, onLocationChange, readOnly = false }) => {
       );
       if (response.ok) {
         const data = await response.json();
-        if (data && data.address) {
-          const addr = data.address;
-          const parts = [
-            addr.road || addr.pedestrian || addr.suburb || addr.neighbourhood,
-            addr.city || addr.town || addr.village || addr.county || 'Abidjan'
-          ].filter(Boolean);
-          return parts.length > 0 ? parts.join(', ') : data.display_name;
+        if (data?.address) {
+          const a = data.address;
+          const poi = a.amenity || a.building || a.university || a.school || a.hospital || a.shop || a.tourism;
+          const street = a.road || a.pedestrian || a.footway || a.path;
+          const quarter = a.suburb || a.quarter || a.neighbourhood || a.residential || a.city_district;
+          const city = a.city || a.town || a.village || a.municipality || a.county || 'Abidjan';
+
+          const segments = [poi, street, quarter, city].filter(Boolean);
+          if (segments.length > 0) {
+            return segments.join(', ');
+          }
+          if (data.display_name) {
+            return data.display_name.split(',').slice(0, 3).join(', ').trim();
+          }
         }
       }
     } catch {
-      // Échec silencieux, ne bloque pas la sélection
+      // Poursuite vers le fallback
     }
-    return null;
+
+    // 2. Source secondaire : BigDataCloud Client Geocoding (Rapide et sans quota bloquant)
+    try {
+      const bdcRes = await fetch(
+        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=fr`
+      );
+      if (bdcRes.ok) {
+        const bdcData = await bdcRes.json();
+        const segments = [
+          bdcData.locality || bdcData.subLocality,
+          bdcData.principalSubdivision,
+          bdcData.city || bdcData.countryName || 'Abidjan'
+        ].filter(Boolean);
+        if (segments.length > 0) {
+          return segments.join(', ');
+        }
+      }
+    } catch {
+      // Fallback final
+    }
+
+    // 3. Fallback textuel de sécurité
+    return `Position GPS (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
   }, []);
 
   const handlePositionSelected = useCallback(async (lng, lat) => {
-    if (!onLocationChange) return;
+    if (!onLocationChange) return null;
     const resolvedAddress = await reverseGeocode(lat, lng);
     onLocationChange({
       type: 'Point',
       coordinates: [lng, lat],
-      resolvedAddress: resolvedAddress || undefined
+      resolvedAddress
     });
+    return resolvedAddress;
   }, [onLocationChange, reverseGeocode]);
 
   useEffect(() => {
@@ -59,16 +95,15 @@ export const MapPicker = ({ location, onLocationChange, readOnly = false }) => {
       const map = L.map(mapContainerRef.current, {
         zoomControl: false,
         attributionControl: false
-      }).setView([initialLat, initialLng], 14);
+      }).setView([initialLat, initialLng], 15);
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19
       }).addTo(map);
 
-      // Icône de marqueur stylisée
       const customIcon = L.divIcon({
         className: 'custom-map-marker',
-        html: `<div style="background-color: var(--color-primary, #E65100); width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--bg-elevated, #FFFFFF); box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;"><div style="background-color: var(--bg-elevated, #FFFFFF); width: 8px; height: 8px; border-radius: 50%;"></div></div>`,
+        html: `<div style="background-color: var(--color-primary, #E65100); width: 28px; height: 28px; border-radius: 50%; border: 3px solid #FFFFFF; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;"><div style="background-color: #FFFFFF; width: 8px; height: 8px; border-radius: 50%;"></div></div>`,
         iconSize: [28, 28],
         iconAnchor: [14, 14]
       });
@@ -103,22 +138,46 @@ export const MapPicker = ({ location, onLocationChange, readOnly = false }) => {
   }, []);
 
   const handleGetCurrentLocation = () => {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      showError('La géolocalisation n\'est pas supportée par votre navigateur.');
+      return;
+    }
+
     setIsLocating(true);
+
+    const onGeoSuccess = async (pos) => {
+      const { latitude, longitude } = pos.coords;
+      if (mapInstanceRef.current && markerRef.current) {
+        mapInstanceRef.current.setView([latitude, longitude], 16);
+        markerRef.current.setLatLng([latitude, longitude]);
+      }
+      const addr = await handlePositionSelected(longitude, latitude);
+      setIsLocating(false);
+      showSuccess(addr ? `Adresse détectée : ${addr}` : 'Position GPS détectée avec succès !');
+    };
+
+    const onGeoError = () => {
+      // Seconde tentative en mode précision standard
+      navigator.geolocation.getCurrentPosition(
+        onGeoSuccess,
+        (fallbackErr) => {
+          setIsLocating(false);
+          if (fallbackErr.code === 1) {
+            showError('Accès GPS refusé. Veuillez autoriser la localisation ou déplacer le repère sur la carte.');
+          } else if (fallbackErr.code === 2) {
+            showError('Signal GPS indisponible. Cliquez directement sur la carte pour définir votre position.');
+          } else {
+            showError('Délai d\'attente GPS dépassé. Veuillez déplacer le repère sur la carte.');
+          }
+        },
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+      );
+    };
+
     navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        if (mapInstanceRef.current && markerRef.current) {
-          mapInstanceRef.current.setView([latitude, longitude], 16);
-          markerRef.current.setLatLng([latitude, longitude]);
-          await handlePositionSelected(longitude, latitude);
-        }
-        setIsLocating(false);
-      },
-      () => {
-        setIsLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
+      onGeoSuccess,
+      onGeoError,
+      { enableHighAccuracy: true, timeout: 7000, maximumAge: 30000 }
     );
   };
 
@@ -133,7 +192,7 @@ export const MapPicker = ({ location, onLocationChange, readOnly = false }) => {
           disabled={isLocating}
         >
           {isLocating ? <Loader2 size={16} className="animate-spin" /> : <Navigation size={16} />}
-          <span>{isLocating ? 'Recherche GPS en cours...' : 'Utiliser ma position actuelle'}</span>
+          <span>{isLocating ? 'Détection GPS en cours...' : 'Utiliser ma position actuelle'}</span>
         </button>
       )}
     </div>
@@ -163,7 +222,7 @@ const gpsButtonStyle = {
   transform: 'translateX(-50%)',
   zIndex: 400,
   backgroundColor: 'var(--color-primary)',
-  color: '#FFFFFF',
+  color: 'var(--color-primary-contrast, #FFFFFF)',
   padding: '8px 16px',
   borderRadius: '9999px',
   fontSize: '0.8rem',
