@@ -82,8 +82,10 @@ export function App() {
   }, []);
 
 
-  // Chargement et rafraîchissement des données lors des changements de page
+  // Chargement des données et réinitialisation instantanée du scroll en haut de page
   useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+
     const fetchInitialData = async () => {
       try {
         const [catRes, dishRes, promoRes, restRes] = await Promise.all([

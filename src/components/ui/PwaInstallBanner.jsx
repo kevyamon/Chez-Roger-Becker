@@ -67,157 +67,179 @@ export const PwaInstallBanner = () => {
   if (!isVisible) return null;
 
   return (
-    <div className="animate-fade-in" style={bannerOverlayStyle}>
-      <div className="card-surface" style={bannerCardStyle}>
+    <div style={modalOverlayStyle}>
+      <div className="card-surface" style={modalCardStyle}>
         <button
           onClick={handleDismiss}
           style={closeButtonStyle}
-          aria-label="Fermer la bannière"
+          aria-label="Fermer la boîte de dialogue"
         >
           <X size={18} color="var(--text-muted)" />
         </button>
 
-        <div style={contentRowStyle}>
+        <div style={logoContainerStyle}>
           <img
             src={logoImg}
             alt="Chez Roger Becker"
             style={logoStyle}
           />
-          <div style={textContainerStyle}>
-            <h4 style={titleStyle}>Installer l'application</h4>
-            <p style={subtitleStyle}>
-              {isIosPrompt
-                ? 'Appuyez sur Partager puis "Sur l\'écran d\'accueil" pour l\'ajouter.'
-                : 'Accédez à vos grillades et suivez vos commandes en 1 clic.'}
-            </p>
-          </div>
         </div>
 
-        <div style={actionsRowStyle}>
-          <button onClick={handleDismiss} style={laterButtonStyle}>
-            Plus tard
-          </button>
+        <div style={textContainerStyle}>
+          <h3 style={titleStyle}>Installer l'application</h3>
+          <span style={appNameBadgeStyle}>Chez Roger Becker</span>
+          <p style={subtitleStyle}>
+            {isIosPrompt
+              ? 'Pour installer l\'application sur votre iPhone, touchez l\'icône Partager puis sélectionnez "Sur l\'écran d\'accueil".'
+              : 'Accédez directement au menu, commandez vos grillades en un clic et suivez vos livraisons en temps réel.'}
+          </p>
+        </div>
 
+        <div style={actionsContainerStyle}>
           {isIosPrompt ? (
-            <div style={iosHintStyle}>
-              <Share size={14} /> Partager &gt; Sur l'écran d'accueil
+            <div style={iosHintBoxStyle}>
+              <Share size={18} color="var(--color-primary)" />
+              <span>Partager &gt; <strong>Sur l'écran d'accueil</strong></span>
             </div>
           ) : (
             <Button
               variant="primary"
-              size="sm"
+              size="lg"
               icon={Download}
               onClick={handleInstallClick}
-              style={{ flex: 1 }}
+              fullWidth
             >
-              Installer
+              Installer l'application
             </Button>
           )}
+
+          <button onClick={handleDismiss} style={dismissButtonStyle}>
+            Continuer sur le navigateur
+          </button>
         </div>
       </div>
     </div>
   );
 };
 
-const bannerOverlayStyle = {
+const modalOverlayStyle = {
   position: 'fixed',
-  bottom: 'calc(75px + env(safe-area-inset-bottom, 0px))',
-  left: '50%',
-  transform: 'translateX(-50%)',
-  width: 'calc(100% - 24px)',
-  maxWidth: '440px',
-  zIndex: 100,
-  pointerEvents: 'auto'
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.65)',
+  backdropFilter: 'blur(8px)',
+  WebkitBackdropFilter: 'blur(8px)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '16px',
+  zIndex: 999
 };
 
-const bannerCardStyle = {
+const modalCardStyle = {
   position: 'relative',
-  padding: '14px 16px',
-  borderRadius: '16px',
+  width: '100%',
+  maxWidth: '360px',
+  padding: '24px 20px',
+  borderRadius: '20px',
   display: 'flex',
   flexDirection: 'column',
-  gap: '10px',
-  boxShadow: '0 8px 30px rgba(0, 0, 0, 0.16)',
-  border: '1.5px solid var(--color-primary-light, rgba(230, 81, 0, 0.25))'
+  alignItems: 'center',
+  textAlign: 'center',
+  gap: '14px',
+  boxShadow: '0 20px 40px rgba(0, 0, 0, 0.35)',
+  border: '1.5px solid var(--color-primary-light, rgba(230, 81, 0, 0.3))'
 };
 
 const closeButtonStyle = {
   position: 'absolute',
-  top: '10px',
-  right: '10px',
-  width: '26px',
-  height: '26px',
+  top: '12px',
+  right: '12px',
+  width: '30px',
+  height: '30px',
   borderRadius: '50%',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   background: 'var(--bg-elevated)',
-  border: 'none',
+  border: '1px solid var(--border-color)',
   cursor: 'pointer'
 };
 
-const contentRowStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '12px'
+const logoContainerStyle = {
+  marginTop: '4px'
 };
 
 const logoStyle = {
-  width: '42px',
-  height: '42px',
-  borderRadius: '10px',
+  width: '58px',
+  height: '58px',
+  borderRadius: '14px',
   objectFit: 'contain',
   backgroundColor: '#000000',
-  flexShrink: 0,
-  boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+  boxShadow: '0 4px 14px rgba(230, 81, 0, 0.3)'
 };
 
 const textContainerStyle = {
   display: 'flex',
   flexDirection: 'column',
-  gap: '2px',
-  paddingRight: '20px'
+  alignItems: 'center',
+  gap: '6px'
 };
 
 const titleStyle = {
-  fontSize: '0.92rem',
+  fontSize: '1.2rem',
   fontWeight: 800,
-  color: 'var(--text-primary)',
-  lineHeight: 1.2
+  color: 'var(--text-primary)'
+};
+
+const appNameBadgeStyle = {
+  fontSize: '0.76rem',
+  fontWeight: 700,
+  color: 'var(--color-primary-dark, #BF360C)',
+  backgroundColor: 'var(--color-primary-surface, rgba(230, 81, 0, 0.12))',
+  padding: '3px 10px',
+  borderRadius: '9999px',
+  width: 'fit-content'
 };
 
 const subtitleStyle = {
-  fontSize: '0.74rem',
+  fontSize: '0.80rem',
   color: 'var(--text-secondary)',
-  lineHeight: 1.3
+  lineHeight: 1.45,
+  marginTop: '4px'
 };
 
-const actionsRowStyle = {
+const actionsContainerStyle = {
+  width: '100%',
   display: 'flex',
+  flexDirection: 'column',
   alignItems: 'center',
-  justifyContent: 'flex-end',
-  gap: '8px',
-  marginTop: '2px'
+  gap: '10px',
+  marginTop: '6px'
 };
 
-const laterButtonStyle = {
-  padding: '7px 12px',
-  fontSize: '0.76rem',
+const dismissButtonStyle = {
+  fontSize: '0.78rem',
   fontWeight: 700,
   color: 'var(--text-muted)',
   backgroundColor: 'transparent',
   border: 'none',
+  padding: '6px 12px',
   cursor: 'pointer'
 };
 
-const iosHintStyle = {
-  display: 'inline-flex',
+const iosHintBoxStyle = {
+  display: 'flex',
   alignItems: 'center',
-  gap: '6px',
-  padding: '6px 12px',
-  borderRadius: '8px',
+  justifyContent: 'center',
+  gap: '8px',
+  width: '100%',
+  padding: '12px 14px',
+  borderRadius: '12px',
   backgroundColor: 'var(--color-primary-surface, rgba(230, 81, 0, 0.12))',
-  color: 'var(--color-primary-dark, #BF360C)',
-  fontSize: '0.74rem',
-  fontWeight: 700
+  color: 'var(--text-primary)',
+  fontSize: '0.82rem',
+  border: '1px solid var(--color-primary-light, rgba(230, 81, 0, 0.25))'
 };

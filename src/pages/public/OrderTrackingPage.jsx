@@ -63,6 +63,11 @@ export const OrderTrackingPage = ({ trackingToken: initialToken, onNavigate }) =
     }
   };
 
+  // Remonte toujours en haut au montage de la page
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   useEffect(() => {
     if (activeIdentifier) {
       fetchOrder(activeIdentifier);
@@ -72,12 +77,14 @@ export const OrderTrackingPage = ({ trackingToken: initialToken, onNavigate }) =
   const handleSelectOrder = (identifier) => {
     setActiveIdentifier(identifier);
     localStorage.setItem('rb_last_tracking_token', identifier);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleBackToList = () => {
     setActiveIdentifier(null);
     setOrder(null);
     setError(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleClearHistory = () => {
