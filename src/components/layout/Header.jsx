@@ -10,18 +10,6 @@ import { useAuth } from '../../context/AuthContext';
 import { checkIsRestaurantOpen } from '../../utils/scheduleHelper';
 import logoImg from '../../assets/images/logo.png';
 
-const statusBadgeContainerStyle = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '6px',
-  padding: '3px 8px',
-  borderRadius: '9999px',
-  marginTop: '3px',
-  fontSize: '0.72rem',
-  fontWeight: 700,
-  transition: 'all 0.3s ease'
-};
-
 const statusDotStyle = {
   width: '6px',
   height: '6px',
@@ -30,62 +18,9 @@ const statusDotStyle = {
 };
 
 const statusTextStyle = {
-  fontSize: '0.72rem',
+  fontSize: '0.68rem',
   fontWeight: 700,
   lineHeight: 1
-};
-
-const headerStyle = {
-  position: 'sticky',
-  top: 0,
-  zIndex: 80,
-  backgroundColor: 'var(--bg-primary)',
-  borderBottom: '1px solid var(--border-color)',
-  padding: '14px 18px',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  backdropFilter: 'blur(12px)'
-};
-
-const brandContainerStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '12px'
-};
-
-const logoImgStyle = {
-  width: '40px',
-  height: '40px',
-  borderRadius: '10px',
-  objectFit: 'contain',
-  backgroundColor: 'var(--bg-elevated)',
-  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
-};
-
-const titleStyle = {
-  fontSize: '1.15rem',
-  fontWeight: 800,
-  color: 'var(--text-primary)',
-  lineHeight: 1.1
-};
-
-const actionsContainerStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '8px'
-};
-
-const themeButtonStyle = {
-  width: '38px',
-  height: '38px',
-  borderRadius: '10px',
-  border: '1px solid var(--border-color)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  backgroundColor: 'var(--bg-elevated)',
-  cursor: 'pointer'
 };
 
 const badgeAdminStyle = {
@@ -116,41 +51,25 @@ const badgeDriverStyle = {
   cursor: 'pointer'
 };
 
-const espaceLivreurBtnStyle = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '5px',
-  fontSize: '0.74rem',
-  fontWeight: 700,
-  padding: '7px 11px',
-  borderRadius: '10px',
-  backgroundColor: 'var(--color-primary-surface, rgba(230, 81, 0, 0.10))',
-  color: 'var(--color-primary-dark, #BF360C)',
-  border: '1px solid var(--color-primary-light, rgba(230, 81, 0, 0.25))',
-  cursor: 'pointer',
-  transition: 'all 0.2s ease',
-  whiteSpace: 'nowrap'
-};
-
 export const Header = ({ restaurantInfo, onNavigate }) => {
   const { isDarkMode, toggleTheme } = useTheme();
-  const { user, isAdmin, isDriver } = useAuth();
+  const { isAdmin, isDriver } = useAuth();
 
-  const { isOpen, statusText } = checkIsRestaurantOpen(restaurantInfo);
+  const { isOpen } = checkIsRestaurantOpen(restaurantInfo);
 
   return (
-    <header style={headerStyle}>
-      <div style={brandContainerStyle}>
+    <header className="app-header">
+      <div className="header-brand">
         <img
           src={logoImg}
           alt="Chez Roger Becker"
-          style={logoImgStyle}
+          className="header-logo"
         />
-        <div>
-          <h1 style={titleStyle}>Chez Roger Becker</h1>
+        <div className="header-brand-info">
+          <h1 className="header-title">Chez Roger Becker</h1>
           <div
+            className="header-status-badge"
             style={{
-              ...statusBadgeContainerStyle,
               backgroundColor: isOpen ? 'rgba(22, 163, 74, 0.10)' : 'rgba(220, 38, 38, 0.10)',
               border: `1px solid ${isOpen ? 'rgba(22, 163, 74, 0.25)' : 'rgba(220, 38, 38, 0.25)'}`,
               color: isOpen ? 'var(--status-success)' : 'var(--status-error)'
@@ -164,13 +83,13 @@ export const Header = ({ restaurantInfo, onNavigate }) => {
               }}
             />
             <span style={statusTextStyle}>
-              {statusText}
+              {isOpen ? 'Ouvert' : 'Fermé'}
             </span>
           </div>
         </div>
       </div>
 
-      <div style={actionsContainerStyle}>
+      <div className="header-actions">
         {isAdmin && onNavigate && (
           <button
             onClick={() => onNavigate('auth-admin')}
@@ -186,27 +105,31 @@ export const Header = ({ restaurantInfo, onNavigate }) => {
             style={badgeDriverStyle}
             title="Accéder au tableau de bord livreur"
           >
-            <Bike size={14} /> Espace Livreur
+            <Bike size={14} />
+            <span className="livreur-text-full">Espace Livreur</span>
+            <span className="livreur-text-short">Livreur</span>
           </button>
         )}
         {!isAdmin && !isDriver && onNavigate && (
           <button
             onClick={() => onNavigate('driver-login')}
-            style={espaceLivreurBtnStyle}
+            className="header-livreur-btn"
             title="Accéder à l'espace livreur"
           >
-            <Bike size={14} /> Espace Livreur
+            <Bike size={14} />
+            <span className="livreur-text-full">Espace Livreur</span>
+            <span className="livreur-text-short">Livreur</span>
           </button>
         )}
         <button
           onClick={toggleTheme}
-          style={themeButtonStyle}
+          className="header-theme-btn"
           aria-label="Basculer le mode d'affichage"
         >
           {isDarkMode ? (
-            <Sun size={19} color="var(--color-secondary-light)" />
+            <Sun size={18} color="var(--color-secondary-light)" />
           ) : (
-            <Moon size={19} color="var(--text-secondary)" />
+            <Moon size={18} color="var(--text-secondary)" />
           )}
         </button>
       </div>

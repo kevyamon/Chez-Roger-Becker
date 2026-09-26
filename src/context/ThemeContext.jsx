@@ -11,9 +11,14 @@ export const ThemeProvider = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('rb_theme_dark');
     if (saved !== null) {
-      return JSON.parse(saved);
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return false;
+      }
     }
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    // Mode Jour (Clair) par défaut pour tous les nouveaux visiteurs
+    return false;
   });
 
   useEffect(() => {

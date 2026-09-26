@@ -17,6 +17,7 @@ import { getOrderStatusLabel } from './utils/statusLabels';
 import { Header } from './components/layout/Header';
 import { TabBar } from './components/layout/TabBar';
 import { DishDetailModal } from './components/menu/DishDetailModal';
+import { PwaInstallBanner } from './components/ui/PwaInstallBanner';
 
 // Pages
 import { HomePage } from './pages/public/HomePage';
@@ -28,24 +29,22 @@ import { NotFoundPage } from './pages/public/NotFoundPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 import { DriverDashboardPage } from './pages/driver/DriverDashboardPage';
-import { applyTheme } from './styles/theme';
 
 export function App() {
   const { isAuthenticated, isAdmin, isDriver, isLoading: isAuthLoading } = useAuth();
   const { addItem, setDeliveryFee } = useCart();
   const { showSuccess, showInfo } = useToast();
 
-  // Active le monitoring du cycle de vie PWA et la résilience hors-ligne
   useAppStartup();
 
   const [activeTab, setActiveTab] = useState(() => {
+    const hash = window.location.hash.replace('#', '');
+    if (hash) return hash;
     const path = window.location.pathname.toLowerCase();
     if (path.includes('/admin') || path.includes('/dashboard') || path.includes('/backoffice')) {
       return 'notfound';
     }
-    const saved = sessionStorage.getItem('rb_active_tab');
-    if (saved) return saved;
-    return 'home';
+    return sessionStorage.getItem('rb_active_tab') || 'home';
   });
 
   const [categories, setCategories] = useState([]);
@@ -56,16 +55,32 @@ export function App() {
   const [selectedDishQty, setSelectedDishQty] = useState(1);
   const [trackingToken, setTrackingToken] = useState(() => storageAdapter.getTrackingToken());
 
-  const handleNavigate = (tab) => {
+  const handleNavigate = (tab, replace = false) => {
+    if (tab !== activeTab) {
+      if (replace) {
+        window.history.replaceState({ tab }, '', `#${tab === 'home' ? '' : tab}`);
+      } else {
+        window.history.pushState({ tab }, '', `#${tab === 'home' ? '' : tab}`);
+      }
+    }
     setActiveTab(tab);
     sessionStorage.setItem('rb_active_tab', tab);
   };
 
-  // Initialisation du thème sauvegardé
+  // Synchronisation avec le bouton retour physique/virtuel du smartphone (popstate)
   useEffect(() => {
-    const savedTheme = localStorage.getItem('rb_theme') === 'dark';
-    applyTheme(savedTheme);
+    window.history.replaceState({ tab: activeTab }, '', `#${activeTab === 'home' ? '' : activeTab}`);
+
+    const handlePopState = (e) => {
+      const target = e.state?.tab || window.location.hash.replace('#', '') || 'home';
+      setActiveTab(target);
+      sessionStorage.setItem('rb_active_tab', target);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
 
   // Chargement et rafraîchissement des données lors des changements de page
   useEffect(() => {
@@ -102,19 +117,19 @@ export function App() {
       if (upd.deliveryFee !== undefined) setDeliveryFee(upd.deliveryFee);
     };
 
-    const onDishCreated = (dish) => setDishes((prev) => [dish, ...prev.filter((d) => d._id !== dish._id)]);
-    const onDishUpdated = (dish) => {
-      setDishes((prev) => prev.map((d) => (d._id === dish._id ? { ...d, ...dish } : d)));
-      setSelectedDish((prev) => (prev && prev._id === dish._id ? { ...prev, ...dish } : prev));
+    const onDishCreated = (d) => setDishes((prev) => [d, ...prev.filter((i) => i._id !== d._id)]);
+    const onDishUpdated = (d) => {
+      setDishes((prev) => prev.map((i) => (i._id === d._id ? { ...i, ...d } : i)));
+      setSelectedDish((prev) => (prev && prev._id === d._id ? { ...prev, ...d } : prev));
     };
     const onDishDeleted = ({ dishId }) => {
-      setDishes((prev) => prev.filter((d) => d._id !== dishId));
+      setDishes((prev) => prev.filter((i) => i._id !== dishId));
       setSelectedDish((prev) => (prev && prev._id === dishId ? null : prev));
     };
 
-    const onCatCreated = (cat) => setCategories((prev) => [...prev.filter((c) => c._id !== cat._id), cat]);
-    const onCatUpdated = (cat) => setCategories((prev) => prev.map((c) => (c._id === cat._id ? { ...c, ...cat } : c)));
-    const onCatDeleted = ({ categoryId }) => setCategories((prev) => prev.filter((c) => c._id !== categoryId));
+    const onCatCreated = (c) => setCategories((prev) => [...prev.filter((i) => i._id !== c._id), c]);
+    const onCatUpdated = (c) => setCategories((prev) => prev.map((i) => (i._id === c._id ? { ...i, ...c } : i)));
+    const onCatDeleted = ({ categoryId }) => setCategories((prev) => prev.filter((i) => i._id !== categoryId));
 
     const onPromoCreated = (p) => setPromotions((prev) => [p, ...prev.filter((item) => item._id !== p._id)]);
     const onPromoUpdated = (p) => setPromotions((prev) => prev.map((item) => (item._id === p._id ? { ...item, ...p } : item)));
@@ -129,9 +144,7 @@ export function App() {
           localStorage.setItem('rb_orders_history', JSON.stringify(updated));
           showInfo(`Votre commande #${data.orderNumber || match.orderNumber} : ${getOrderStatusLabel(data.status)}`);
         }
-      } catch {
-        // Ignorer erreur JSON
-      }
+      } catch {}
     };
 
     socket.on('restaurant:updated', onRestaurantUpdate);
@@ -183,24 +196,9 @@ export function App() {
   const renderActiveScreen = () => {
     switch (activeTab) {
       case 'home':
-        return (
-          <HomePage
-            dishes={dishes}
-            promotions={promotions}
-            categories={categories}
-            restaurant={restaurant}
-            onNavigate={handleNavigate}
-            onSelectDish={handleSelectDish}
-          />
-        );
+        return <HomePage dishes={dishes} promotions={promotions} categories={categories} restaurant={restaurant} onNavigate={handleNavigate} onSelectDish={handleSelectDish} />;
       case 'menu':
-        return (
-          <MenuPage
-            dishes={dishes}
-            categories={categories}
-            onSelectDish={handleSelectDish}
-          />
-        );
+        return <MenuPage dishes={dishes} categories={categories} onSelectDish={handleSelectDish} />;
       case 'cart':
         return <CartPage onNavigate={handleNavigate} />;
       case 'checkout':
@@ -211,11 +209,7 @@ export function App() {
       case 'driver-login':
       case 'auth': {
         if (isAuthLoading && !isAuthenticated) {
-          return (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: 'var(--text-secondary)' }}>
-              Chargement de votre session...
-            </div>
-          );
+          return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: 'var(--text-secondary)' }}>Chargement de votre session...</div>;
         }
         if (isAuthenticated) {
           if (isAdmin) return <AdminDashboardPage />;
@@ -236,11 +230,7 @@ export function App() {
   return (
     <div className="app-container">
       {!isProFlow && (
-        <Header
-          restaurantInfo={restaurant}
-          onNavigate={handleNavigate}
-          onOpenMenu={() => handleNavigate('menu')}
-        />
+        <Header restaurantInfo={restaurant} onNavigate={handleNavigate} onOpenMenu={() => handleNavigate('menu')} />
       )}
 
       <main style={{ flex: 1 }}>{renderActiveScreen()}</main>
@@ -256,6 +246,8 @@ export function App() {
         onChangeQuantity={setSelectedDishQty}
         onAddToCart={handleAddModalDish}
       />
+
+      <PwaInstallBanner />
     </div>
   );
 }

@@ -15,73 +15,80 @@ export const MapPicker = ({ location, onLocationChange, readOnly = false }) => {
   const markerRef = useRef(null);
   const [isLocating, setIsLocating] = useState(false);
 
-  // Coordonnées par défaut : Abidjan, Côte d'Ivoire [lng, lat]
   const defaultCoords = [location?.coordinates?.[0] || -4.0083, location?.coordinates?.[1] || 5.3599];
 
   /**
-   * Résolution d'adresse en texte clair multi-sources (Nominatim + BigDataCloud).
+   * Résolution d'adresse en texte clair haute précision (Nominatim + Photon + BDC).
    */
   const reverseGeocode = useCallback(async (lat, lng) => {
-    // 1. Source primaire : OpenStreetMap Nominatim
+    // 1. Source primaire : OSM Nominatim haute résolution (zoom=18)
     try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`,
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&extratags=1`,
         { headers: { 'Accept-Language': 'fr' } }
       );
-      if (response.ok) {
-        const data = await response.json();
+      if (res.ok) {
+        const data = await res.json();
         if (data?.address) {
           const a = data.address;
-          const poi = a.amenity || a.building || a.university || a.school || a.hospital || a.shop || a.tourism;
-          const street = a.road || a.pedestrian || a.footway || a.path;
-          const quarter = a.suburb || a.quarter || a.neighbourhood || a.residential || a.city_district;
-          const city = a.city || a.town || a.village || a.municipality || a.county || 'Abidjan';
+          const poi = a.amenity || a.building || a.university || a.college || a.school || a.hospital || a.clinic || a.pharmacy || a.supermarket || a.shop;
+          const house = a.house_number || a.house_name;
+          const road = a.road || a.pedestrian || a.footway || a.street || a.highway || a.residential || a.path || a.lane;
+          const street = road ? (house ? `${road} (N° ${house})` : road) : house;
+          const quarter = a.suburb || a.quarter || a.neighbourhood || a.city_district || a.district || a.hamlet;
+          const city = a.city || a.town || a.municipality || a.county || 'Abidjan';
 
           const segments = [poi, street, quarter, city].filter(Boolean);
-          if (segments.length > 0) {
-            return segments.join(', ');
-          }
-          if (data.display_name) {
-            return data.display_name.split(',').slice(0, 3).join(', ').trim();
-          }
+          const unique = [];
+          segments.forEach((s) => {
+            const clean = s.trim();
+            if (!unique.some((e) => e.toLowerCase() === clean.toLowerCase())) unique.push(clean);
+          });
+          if (street || poi || unique.length > 0) return unique.join(', ');
         }
       }
-    } catch {
-      // Poursuite vers le fallback
-    }
+    } catch {}
 
-    // 2. Source secondaire : BigDataCloud Client Geocoding (Rapide et sans quota bloquant)
+    // 2. Source secondaire : Komoot Photon OSM API
     try {
-      const bdcRes = await fetch(
-        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=fr`
-      );
+      const photonRes = await fetch(`https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}&lang=fr`);
+      if (photonRes.ok) {
+        const photonData = await photonRes.json();
+        const p = photonData?.features?.[0]?.properties;
+        if (p) {
+          const pPoi = p.name && p.name !== p.street && p.name !== p.city ? p.name : null;
+          const pStreet = p.street ? (p.housenumber ? `${p.street} (N° ${p.housenumber})` : p.street) : null;
+          const pQuarter = p.district || p.suburb || p.locality;
+          const pCity = p.city || 'Abidjan';
+
+          const pSegments = [pPoi, pStreet, pQuarter, pCity].filter(Boolean);
+          const cleanP = [];
+          pSegments.forEach((s) => {
+            const val = s.trim();
+            if (!cleanP.some((i) => i.toLowerCase() === val.toLowerCase())) cleanP.push(val);
+          });
+          if (cleanP.length > 0) return cleanP.join(', ');
+        }
+      }
+    } catch {}
+
+    // 3. Source tertiaire : BigDataCloud
+    try {
+      const bdcRes = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=fr`);
       if (bdcRes.ok) {
         const bdcData = await bdcRes.json();
-        const segments = [
-          bdcData.locality || bdcData.subLocality,
-          bdcData.principalSubdivision,
-          bdcData.city || bdcData.countryName || 'Abidjan'
-        ].filter(Boolean);
-        if (segments.length > 0) {
-          return segments.join(', ');
-        }
+        const segments = [bdcData.locality || bdcData.subLocality, bdcData.principalSubdivision, bdcData.city || bdcData.countryName || 'Abidjan'].filter(Boolean);
+        if (segments.length > 0) return segments.join(', ');
       }
-    } catch {
-      // Fallback final
-    }
+    } catch {}
 
-    // 3. Fallback textuel de sécurité
     return `Position GPS (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
   }, []);
 
   const handlePositionSelected = useCallback(async (lng, lat) => {
     if (!onLocationChange) return null;
     const resolvedAddress = await reverseGeocode(lat, lng);
-    onLocationChange({
-      type: 'Point',
-      coordinates: [lng, lat],
-      resolvedAddress
-    });
+    onLocationChange({ type: 'Point', coordinates: [lng, lat], resolvedAddress });
     return resolvedAddress;
   }, [onLocationChange, reverseGeocode]);
 
@@ -92,14 +99,8 @@ export const MapPicker = ({ location, onLocationChange, readOnly = false }) => {
       const initialLat = defaultCoords[1];
       const initialLng = defaultCoords[0];
 
-      const map = L.map(mapContainerRef.current, {
-        zoomControl: false,
-        attributionControl: false
-      }).setView([initialLat, initialLng], 15);
-
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19
-      }).addTo(map);
+      const map = L.map(mapContainerRef.current, { zoomControl: false, attributionControl: false }).setView([initialLat, initialLng], 16);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
       const customIcon = L.divIcon({
         className: 'custom-map-marker',
@@ -108,17 +109,13 @@ export const MapPicker = ({ location, onLocationChange, readOnly = false }) => {
         iconAnchor: [14, 14]
       });
 
-      const marker = L.marker([initialLat, initialLng], {
-        draggable: !readOnly,
-        icon: customIcon
-      }).addTo(map);
+      const marker = L.marker([initialLat, initialLng], { draggable: !readOnly, icon: customIcon }).addTo(map);
 
       if (!readOnly) {
         marker.on('dragend', () => {
           const pos = marker.getLatLng();
           handlePositionSelected(pos.lng, pos.lat);
         });
-
         map.on('click', (e) => {
           marker.setLatLng(e.latlng);
           handlePositionSelected(e.latlng.lng, e.latlng.lat);
@@ -144,53 +141,40 @@ export const MapPicker = ({ location, onLocationChange, readOnly = false }) => {
     }
 
     setIsLocating(true);
-
     const onGeoSuccess = async (pos) => {
       const { latitude, longitude } = pos.coords;
       if (mapInstanceRef.current && markerRef.current) {
-        mapInstanceRef.current.setView([latitude, longitude], 16);
+        mapInstanceRef.current.setView([latitude, longitude], 17);
         markerRef.current.setLatLng([latitude, longitude]);
       }
       const addr = await handlePositionSelected(longitude, latitude);
       setIsLocating(false);
-      showSuccess(addr ? `Adresse détectée : ${addr}` : 'Position GPS détectée avec succès !');
+      showSuccess(addr ? `Position détectée : ${addr}` : 'Position GPS détectée avec succès !');
     };
 
     const onGeoError = () => {
-      // Seconde tentative en mode précision standard
       navigator.geolocation.getCurrentPosition(
         onGeoSuccess,
         (fallbackErr) => {
           setIsLocating(false);
           if (fallbackErr.code === 1) {
             showError('Accès GPS refusé. Veuillez autoriser la localisation ou déplacer le repère sur la carte.');
-          } else if (fallbackErr.code === 2) {
-            showError('Signal GPS indisponible. Cliquez directement sur la carte pour définir votre position.');
           } else {
-            showError('Délai d\'attente GPS dépassé. Veuillez déplacer le repère sur la carte.');
+            showError('Signal GPS imprécis. Cliquez directement sur la carte pour définir votre position.');
           }
         },
         { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
       );
     };
 
-    navigator.geolocation.getCurrentPosition(
-      onGeoSuccess,
-      onGeoError,
-      { enableHighAccuracy: true, timeout: 7000, maximumAge: 30000 }
-    );
+    navigator.geolocation.getCurrentPosition(onGeoSuccess, onGeoError, { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 });
   };
 
   return (
     <div style={containerStyle}>
       <div ref={mapContainerRef} style={mapWrapperStyle} />
       {!readOnly && (
-        <button
-          type="button"
-          onClick={handleGetCurrentLocation}
-          style={gpsButtonStyle}
-          disabled={isLocating}
-        >
+        <button type="button" onClick={handleGetCurrentLocation} style={gpsButtonStyle} disabled={isLocating}>
           {isLocating ? <Loader2 size={16} className="animate-spin" /> : <Navigation size={16} />}
           <span>{isLocating ? 'Détection GPS en cours...' : 'Utiliser ma position actuelle'}</span>
         </button>
