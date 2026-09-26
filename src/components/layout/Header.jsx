@@ -105,7 +105,7 @@ const badgeAdminStyle = {
 const badgeDriverStyle = {
   display: 'flex',
   alignItems: 'center',
-  gap: '4px',
+  gap: '5px',
   fontSize: '0.72rem',
   fontWeight: 700,
   padding: '6px 10px',
@@ -114,6 +114,22 @@ const badgeDriverStyle = {
   color: 'var(--color-secondary-dark, #E65100)',
   border: '1px solid var(--border-color)',
   cursor: 'pointer'
+};
+
+const espaceLivreurBtnStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '5px',
+  fontSize: '0.74rem',
+  fontWeight: 700,
+  padding: '7px 11px',
+  borderRadius: '10px',
+  backgroundColor: 'var(--color-primary-surface, rgba(230, 81, 0, 0.10))',
+  color: 'var(--color-primary-dark, #BF360C)',
+  border: '1px solid var(--color-primary-light, rgba(230, 81, 0, 0.25))',
+  cursor: 'pointer',
+  transition: 'all 0.2s ease',
+  whiteSpace: 'nowrap'
 };
 
 export const Header = ({ restaurantInfo, onNavigate }) => {
@@ -170,7 +186,16 @@ export const Header = ({ restaurantInfo, onNavigate }) => {
             style={badgeDriverStyle}
             title="Accéder au tableau de bord livreur"
           >
-            <Bike size={13} /> Livreur
+            <Bike size={14} /> Espace Livreur
+          </button>
+        )}
+        {!isAdmin && !isDriver && onNavigate && (
+          <button
+            onClick={() => onNavigate('auth')}
+            style={espaceLivreurBtnStyle}
+            title="Accéder à l'espace livreur"
+          >
+            <Bike size={14} /> Espace Livreur
           </button>
         )}
         <button
