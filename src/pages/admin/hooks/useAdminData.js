@@ -34,30 +34,14 @@ export const useAdminData = () => {
 
       const [dashRes, setRes, ordersRes, dishesRes, catRes, driversRes] = results;
 
-      if (dashRes.status === 'fulfilled' && dashRes.value?.success) {
-        setDashboardData(dashRes.value.data);
-      }
-      if (setRes.status === 'fulfilled' && setRes.value?.success) {
-        setSettings(setRes.value.data?.settings || setRes.value.data);
-      }
-      if (ordersRes.status === 'fulfilled' && ordersRes.value?.success) {
-        setOrders(ordersRes.value.data?.items || ordersRes.value.data || []);
-      }
-      if (dishesRes.status === 'fulfilled' && dishesRes.value?.success) {
-        setDishes(dishesRes.value.data?.items || dishesRes.value.data || []);
-      }
-      if (catRes.status === 'fulfilled' && catRes.value?.success) {
-        setCategories(catRes.value.data?.categories || catRes.value.data || []);
-      }
+      if (dashRes.status === 'fulfilled' && dashRes.value?.success) setDashboardData(dashRes.value.data);
+      if (setRes.status === 'fulfilled' && setRes.value?.success) setSettings(setRes.value.data?.settings || setRes.value.data);
+      if (ordersRes.status === 'fulfilled' && ordersRes.value?.success) setOrders(ordersRes.value.data?.items || ordersRes.value.data || []);
+      if (dishesRes.status === 'fulfilled' && dishesRes.value?.success) setDishes(dishesRes.value.data?.items || dishesRes.value.data || []);
+      if (catRes.status === 'fulfilled' && catRes.value?.success) setCategories(catRes.value.data?.categories || catRes.value.data || []);
       if (driversRes.status === 'fulfilled' && driversRes.value?.success) {
         const dData = driversRes.value.data;
-        const dList = Array.isArray(dData?.drivers)
-          ? dData.drivers
-          : Array.isArray(dData)
-          ? dData
-          : Array.isArray(driversRes.value?.drivers)
-          ? driversRes.value.drivers
-          : [];
+        const dList = Array.isArray(dData?.drivers) ? dData.drivers : Array.isArray(dData) ? dData : [];
         setDrivers(dList);
       }
     } catch (err) {
@@ -89,34 +73,14 @@ export const useAdminData = () => {
     };
 
     const onOrderStatusChanged = (upd) => {
-      setOrders((prev) =>
-        prev.map((o) => (o._id === upd.orderId || o.orderNumber === upd.orderNumber ? { ...o, ...upd } : o))
-      );
+      setOrders((prev) => prev.map((o) => (o._id === upd.orderId || o.orderNumber === upd.orderNumber ? { ...o, ...upd } : o)));
     };
 
-    const onRestaurantUpdated = (upd) => {
-      setSettings((prev) => (prev ? { ...prev, ...upd } : upd));
-    };
-
-    const onDriverCreated = (d) => {
-      if (!d?._id) return;
-      setDrivers((prev) => [d, ...prev.filter((item) => item._id !== d._id)]);
-    };
-
-    const onDriverUpdated = (d) => {
-      if (!d?._id) return;
-      setDrivers((prev) => prev.map((item) => (item._id === d._id ? { ...item, ...d } : item)));
-    };
-
-    const onDriverStatusChanged = ({ driverId, status }) => {
-      if (!driverId) return;
-      setDrivers((prev) => prev.map((d) => (d._id === driverId ? { ...d, driverStatus: status } : d)));
-    };
-
-    const onDriverDeleted = ({ driverId }) => {
-      if (!driverId) return;
-      setDrivers((prev) => prev.filter((d) => d._id !== driverId));
-    };
+    const onRestaurantUpdated = (upd) => setSettings((prev) => (prev ? { ...prev, ...upd } : upd));
+    const onDriverCreated = (d) => d?._id && setDrivers((prev) => [d, ...prev.filter((item) => item._id !== d._id)]);
+    const onDriverUpdated = (d) => d?._id && setDrivers((prev) => prev.map((item) => (item._id === d._id ? { ...item, ...d } : item)));
+    const onDriverStatusChanged = ({ driverId, status }) => driverId && setDrivers((prev) => prev.map((d) => (d._id === driverId ? { ...d, driverStatus: status } : d)));
+    const onDriverDeleted = ({ driverId }) => driverId && setDrivers((prev) => prev.filter((d) => d._id !== driverId));
 
     socket.on('order:created', onOrderCreated);
     socket.on('order:status-changed', onOrderStatusChanged);
@@ -168,7 +132,7 @@ export const useAdminData = () => {
   const saveDish = async (dishData) => {
     try {
       if (dishData._id) {
-        const res = await apiClient.put(`/admin/dishes/${dishData._id}`, dishData);
+        const res = await apiClient.patch(`/admin/dishes/${dishData._id}`, dishData);
         if (res.success && res.data?.dish) {
           setDishes((prev) => prev.map((d) => (d._id === dishData._id ? res.data.dish : d)));
           showSuccess('Plat mis à jour avec succès.');
@@ -184,7 +148,7 @@ export const useAdminData = () => {
       }
       return false;
     } catch (err) {
-      showError(err.message || 'Échec lors de l\'enregistrement du plat.');
+      showError(err.message || "Échec lors de l'enregistrement du plat.");
       return false;
     }
   };

@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, ArrowRight, Tag, Sparkles } from 'lucide-react';
+import { X, ArrowRight, Tag, BadgePercent } from 'lucide-react';
 import { Button } from './Button';
 
 export const PromoPopupModal = ({
@@ -96,7 +96,7 @@ export const PromoPopupModal = ({
           <div style={bannerWrapperStyle}>
             <img src={currentPromo.image} alt={currentPromo.title} style={bannerImgStyle} />
             <div style={bannerTagOverlayStyle}>
-              <Sparkles size={14} color="#FFFFFF" />
+              <Tag size={13} color="#FFFFFF" />
               <span>Offre Spéciale</span>
             </div>
           </div>
@@ -188,12 +188,7 @@ const bannerWrapperStyle = {
   overflow: 'hidden'
 };
 
-const bannerImgStyle = {
-  width: '100%',
-  height: '220px',
-  objectFit: 'cover',
-  display: 'block'
-};
+const bannerImgStyle = { width: '100%', height: '220px', objectFit: 'cover', display: 'block' };
 
 const bannerTagOverlayStyle = {
   position: 'absolute',
@@ -240,30 +235,7 @@ const gradientTagStyle = {
   letterSpacing: '0.5px'
 };
 
-const contentPaddingStyle = {
-  padding: '20px',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '10px',
-  textAlign: 'center'
-};
-
-const promoTitleStyle = {
-  fontSize: '1.25rem',
-  fontWeight: 800,
-  color: 'var(--text-primary)',
-  lineHeight: 1.25
-};
-
-const promoDescStyle = {
-  fontSize: '0.88rem',
-  color: 'var(--text-secondary)',
-  lineHeight: 1.5,
-  margin: '0 auto',
-  maxWidth: '340px'
-};
-
-const actionRowStyle = {
-  marginTop: '10px',
-  width: '100%'
-};
+const contentPaddingStyle = { padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'center' };
+const promoTitleStyle = { fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.25 };
+const promoDescStyle = { fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 auto', maxWidth: '340px' };
+const actionRowStyle = { marginTop: '10px', width: '100%' };

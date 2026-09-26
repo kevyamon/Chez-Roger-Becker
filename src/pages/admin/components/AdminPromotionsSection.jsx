@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Plus, Tag, Sparkles } from 'lucide-react';
+import { Plus, Tag, BadgePercent } from 'lucide-react';
 import { AdminPromotionCard } from './AdminPromotionCard';
 import { PromotionEditModal } from './PromotionEditModal';
 import { Button } from '../../../components/ui/Button';
@@ -79,7 +79,7 @@ export const AdminPromotionsSection = ({
       ) : promotions.length === 0 ? (
         <div className="card-surface" style={emptyStateCardStyle}>
           <div style={emptyIconCircleStyle}>
-            <Sparkles size={28} color="var(--color-primary)" />
+            <BadgePercent size={28} color="var(--color-primary)" />
           </div>
           <h4 style={emptyTitleStyle}>Aucune offre promotionnelle</h4>
           <p style={emptyDescStyle}>
