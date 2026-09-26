@@ -64,7 +64,12 @@ export const AdminDashboardPage = () => {
             promotions={promoData.promotions}
             isLoading={adminData.isLoading}
             isLoadingPromos={promoData.isLoading}
-            onSelectOrder={(ord) => setSelectedOrder(ord)}
+            onSelectOrder={(ord) => {
+              if (ord?._id) {
+                adminData.markOrderAsViewed(ord._id);
+              }
+              setSelectedOrder(ord);
+            }}
             onUpdateOrderStatus={adminData.updateOrderStatus}
             onOpenCreateDish={() => {
               setSelectedDish(null);
@@ -90,16 +95,17 @@ export const AdminDashboardPage = () => {
       <AdminTabBar
         activeSection={activeSection}
         onSelectSection={setActiveSection}
-        pendingOrdersCount={adminData.dashboardData?.kpi?.pendingCount || 0}
+        pendingOrdersCount={adminData.unviewedOrdersCount}
       />
 
       {selectedOrder && (
         <AdminOrderDetailsModal
           isOpen={Boolean(selectedOrder)}
           onClose={() => setSelectedOrder(null)}
-          order={selectedOrder}
+          order={adminData.orders.find((o) => o._id === selectedOrder._id) || selectedOrder}
           drivers={adminData.drivers}
           onUpdateStatus={adminData.updateOrderStatus}
+          onAssignDriver={adminData.assignDriverToOrder}
         />
       )}
 

@@ -18,7 +18,12 @@ export const AdminOrderCard = ({
     <div className="card-surface" style={orderCardStyle}>
       <div style={orderHeaderStyle}>
         <div>
-          <span style={orderNumberStyle}>{order.orderNumber}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={orderNumberStyle}>{order.orderNumber}</span>
+            {!order.isViewedByAdmin && (
+              <span style={unreadBadgeStyle}>Non lue</span>
+            )}
+          </div>
           <p style={dateStyle}>
             {new Date(order.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
           </p>
@@ -100,6 +105,16 @@ const orderNumberStyle = {
   fontSize: '0.88rem',
   fontWeight: 800,
   color: 'var(--color-primary)'
+};
+
+const unreadBadgeStyle = {
+  fontSize: '0.65rem',
+  fontWeight: 800,
+  padding: '1px 6px',
+  borderRadius: '4px',
+  backgroundColor: 'var(--color-primary-surface)',
+  color: 'var(--color-primary)',
+  border: '1px solid var(--color-primary-light)'
 };
 
 const dateStyle = {

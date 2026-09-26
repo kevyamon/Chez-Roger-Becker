@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../../../services/api';
 import { socket, joinAdminRoom } from '../../../services/socket';
 import { useToast } from '../../../context/ToastContext';
+import { useAdminDrivers } from './useAdminDrivers';
 
 export const useAdminData = () => {
   const { showSuccess, showError, showInfo } = useToast();
@@ -76,6 +77,15 @@ export const useAdminData = () => {
       setOrders((prev) => prev.map((o) => (o._id === upd.orderId || o.orderNumber === upd.orderNumber ? { ...o, ...upd } : o)));
     };
 
+    const onOrderViewed = ({ orderId }) => {
+      setOrders((prev) => prev.map((o) => (o._id === orderId ? { ...o, isViewedByAdmin: true } : o)));
+    };
+
+    const onOrderUpdated = (upd) => {
+      if (!upd?._id) return;
+      setOrders((prev) => prev.map((o) => (o._id === upd._id ? { ...o, ...upd } : o)));
+    };
+
     const onRestaurantUpdated = (upd) => setSettings((prev) => (prev ? { ...prev, ...upd } : upd));
     const onDriverCreated = (d) => d?._id && setDrivers((prev) => [d, ...prev.filter((item) => item._id !== d._id)]);
     const onDriverUpdated = (d) => d?._id && setDrivers((prev) => prev.map((item) => (item._id === d._id ? { ...item, ...d } : item)));
@@ -84,6 +94,8 @@ export const useAdminData = () => {
 
     socket.on('order:created', onOrderCreated);
     socket.on('order:status-changed', onOrderStatusChanged);
+    socket.on('order:viewed', onOrderViewed);
+    socket.on('order:updated', onOrderUpdated);
     socket.on('restaurant:updated', onRestaurantUpdated);
     socket.on('driver:created', onDriverCreated);
     socket.on('driver:updated', onDriverUpdated);
@@ -93,6 +105,8 @@ export const useAdminData = () => {
     return () => {
       socket.off('order:created', onOrderCreated);
       socket.off('order:status-changed', onOrderStatusChanged);
+      socket.off('order:viewed', onOrderViewed);
+      socket.off('order:updated', onOrderUpdated);
       socket.off('restaurant:updated', onRestaurantUpdated);
       socket.off('driver:created', onDriverCreated);
       socket.off('driver:updated', onDriverUpdated);
@@ -179,50 +193,7 @@ export const useAdminData = () => {
     }
   };
 
-  const createDriver = async (driverData) => {
-    try {
-      const res = await apiClient.post('/admin/drivers', driverData);
-      if (res.success && res.data?.driver) {
-        setDrivers((prev) => [res.data.driver, ...prev.filter((d) => d._id !== res.data.driver._id)]);
-        showSuccess('Compte livreur créé avec succès.');
-        return true;
-      }
-      return false;
-    } catch (err) {
-      showError(err.message || 'Échec de création du livreur.');
-      return false;
-    }
-  };
-
-  const updateDriver = async (driverId, updateData) => {
-    try {
-      const res = await apiClient.patch(`/admin/drivers/${driverId}`, updateData);
-      if (res.success && res.data?.driver) {
-        setDrivers((prev) => prev.map((d) => (d._id === driverId ? { ...d, ...res.data.driver } : d)));
-        showSuccess('Compte livreur mis à jour avec succès.');
-        return true;
-      }
-      return false;
-    } catch (err) {
-      showError(err.message || 'Échec de mise à jour du livreur.');
-      return false;
-    }
-  };
-
-  const deleteDriver = async (driverId) => {
-    try {
-      const res = await apiClient.delete(`/admin/drivers/${driverId}`);
-      if (res.success) {
-        setDrivers((prev) => prev.filter((d) => d._id !== driverId));
-        showSuccess('Livreur supprimé avec succès.');
-        return true;
-      }
-      return false;
-    } catch (err) {
-      showError(err.message || 'Échec de suppression du livreur.');
-      return false;
-    }
-  };
+  const { createDriver, updateDriver, deleteDriver } = useAdminDrivers(setDrivers);
 
   const saveSettings = async (newSettings) => {
     try {
@@ -239,6 +210,34 @@ export const useAdminData = () => {
     }
   };
 
+  // Marquage d'une commande comme déjà vue dès la consultation de son détail
+  const markOrderAsViewed = async (orderId) => {
+    if (!orderId) return;
+    setOrders((prev) => prev.map((o) => (o._id === orderId ? { ...o, isViewedByAdmin: true } : o)));
+    try {
+      await apiClient.patch(`/admin/orders/${orderId}/viewed`);
+    } catch {
+      // Échec silencieux pour préserver la fluidité de consultation
+    }
+  };
+
+  // Assignation manuelle d'un coursier disponible
+  const assignDriverToOrder = async (orderId, driverId) => {
+    try {
+      const res = await apiClient.post(`/admin/orders/${orderId}/assign-driver`, { driverId });
+      if (res.success && res.data?.order) {
+        setOrders((prev) => prev.map((o) => (o._id === orderId ? res.data.order : o)));
+        showSuccess('Livreur assigné avec succès.');
+        return res.data.order;
+      }
+    } catch (err) {
+      showError(err.message || "Impossible d'assigner ce livreur.");
+      throw err;
+    }
+  };
+
+  const unviewedOrdersCount = orders.filter((o) => !o.isViewedByAdmin && o.status !== 'CANCELLED').length;
+
   return {
     isLoading,
     isUpdatingStore,
@@ -248,9 +247,12 @@ export const useAdminData = () => {
     dishes,
     categories,
     drivers,
+    unviewedOrdersCount,
     fetchAllAdminData,
     toggleStoreStatus,
     updateOrderStatus,
+    markOrderAsViewed,
+    assignDriverToOrder,
     saveDish,
     toggleDishAvailability,
     deleteDish,
