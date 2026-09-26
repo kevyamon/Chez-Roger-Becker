@@ -1,10 +1,10 @@
 /**
  * Tableau de bord spécialisé pour les livreurs (DriverDashboard).
- * Onglets fluides : Courses en cours, Nouvelles commandes, Historique/Stats et Mon Compte.
+ * Onglets fluides : Courses en cours, Nouvelles commandes, Historique/Stats et Mon Profil.
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Navigation, Bike, History, Package } from 'lucide-react';
+import { Navigation, Bike, History, Package, User } from 'lucide-react';
 import { apiClient } from '../../services/api';
 import { socket } from '../../services/socket';
 import { useAuth } from '../../context/AuthContext';
@@ -13,19 +13,18 @@ import { DriverHeaderCard } from './components/DriverHeaderCard';
 import { DriverActiveDeliveryCard } from './components/DriverActiveDeliveryCard';
 import { DriverAvailableOrdersList } from './components/DriverAvailableOrdersList';
 import { DriverHistorySection } from './components/DriverHistorySection';
-import { DriverProfileModal } from './components/DriverProfileModal';
+import { DriverProfileSection } from './components/DriverProfileSection';
 
 export const DriverDashboardPage = () => {
   const { user, logout } = useAuth();
   const { showSuccess, showError, showInfo } = useToast();
 
-  const [activeTab, setActiveTab] = useState('active'); // 'active' | 'available' | 'history'
+  const [activeTab, setActiveTab] = useState('active'); // 'active' | 'available' | 'history' | 'profile'
   const [driverStatus, setDriverStatus] = useState(user?.driverStatus || 'AVAILABLE');
   const [availableOrders, setAvailableOrders] = useState([]);
   const [activeDeliveries, setActiveDeliveries] = useState([]);
   const [driverStats, setDriverStats] = useState(null);
   const [currentUser, setCurrentUser] = useState(user);
-  const [showProfileModal, setShowProfileModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const fetchDashboardData = useCallback(async () => {
@@ -115,37 +114,50 @@ export const DriverDashboardPage = () => {
 
   return (
     <div className="animate-fade-in" style={containerStyle}>
-      {/* 1. EN-TÊTE DU LIVREUR & DISPONIBILITÉ */}
-      <DriverHeaderCard
-        user={currentUser}
-        driverStatus={driverStatus}
-        onToggleStatus={handleToggleStatus}
-        onOpenProfile={() => setShowProfileModal(true)}
-        onLogout={logout}
-      />
+      {/* 1. EN-TÊTE DU LIVREUR (masqué sur la vue profil pour ne pas doubler les cartes) */}
+      {activeTab !== 'profile' && (
+        <DriverHeaderCard
+          user={currentUser}
+          driverStatus={driverStatus}
+          onToggleStatus={handleToggleStatus}
+          onOpenProfile={() => setActiveTab('profile')}
+          onLogout={logout}
+        />
+      )}
 
       {/* 2. ONGLETS DE NAVIGATION LIVREUR */}
       <div style={navTabsStyle}>
         <button
+          type="button"
           onClick={() => setActiveTab('active')}
           style={activeTab === 'active' ? activeTabStyle : tabStyle}
         >
-          <Navigation size={15} />
-          Courses en cours {activeDeliveries.length > 0 ? `(${activeDeliveries.length})` : ''}
+          <Navigation size={14} />
+          Courses {activeDeliveries.length > 0 ? `(${activeDeliveries.length})` : ''}
         </button>
         <button
+          type="button"
           onClick={() => setActiveTab('available')}
           style={activeTab === 'available' ? activeTabStyle : tabStyle}
         >
-          <Package size={15} />
+          <Package size={14} />
           Disponibles {availableOrders.length > 0 ? `(${availableOrders.length})` : ''}
         </button>
         <button
+          type="button"
           onClick={() => setActiveTab('history')}
           style={activeTab === 'history' ? activeTabStyle : tabStyle}
         >
-          <History size={15} />
+          <History size={14} />
           Historique
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('profile')}
+          style={activeTab === 'profile' ? activeTabStyle : tabStyle}
+        >
+          <User size={14} />
+          Mon Profil
         </button>
       </div>
 
@@ -159,7 +171,7 @@ export const DriverDashboardPage = () => {
                 Aucune course active en ce moment.
               </p>
               {availableOrders.length > 0 && (
-                <button onClick={() => setActiveTab('available')} style={ctaLinkStyle}>
+                <button type="button" onClick={() => setActiveTab('available')} style={ctaLinkStyle}>
                   Voir les {availableOrders.length} commande(s) disponible(s)
                 </button>
               )}
@@ -190,12 +202,15 @@ export const DriverDashboardPage = () => {
         <DriverHistorySection driverStats={driverStats} />
       )}
 
-      {/* MODALE MON PROFIL / CHANGEMENT MOT DE PASSE */}
-      {showProfileModal && (
-        <DriverProfileModal
+      {activeTab === 'profile' && (
+        <DriverProfileSection
           user={currentUser}
-          onClose={() => setShowProfileModal(false)}
+          driverStats={driverStats}
+          driverStatus={driverStatus}
+          onToggleStatus={handleToggleStatus}
+          onBack={() => setActiveTab('active')}
           onProfileUpdated={(updated) => setCurrentUser(updated)}
+          onLogout={logout}
         />
       )}
     </div>
@@ -226,8 +241,8 @@ const tabStyle = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  gap: '6px',
-  fontSize: '0.78rem',
+  gap: '5px',
+  fontSize: '0.74rem',
   fontWeight: 600,
   color: 'var(--text-secondary)',
   backgroundColor: 'transparent',

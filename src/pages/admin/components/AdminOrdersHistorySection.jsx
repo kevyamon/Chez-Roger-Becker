@@ -30,11 +30,19 @@ export const AdminOrdersHistorySection = () => {
       if (dateFilter) params.append('date', dateFilter);
 
       const res = await apiClient.get(`/admin/orders-history?${params.toString()}`);
-      if (res.success) {
-        setOrders(res.data?.data || res.data || []);
-        if (res.pagination) {
-          setTotalPages(Math.ceil((res.pagination.total || 0) / 20));
+      if (res.success && res.data) {
+        const rawItems = Array.isArray(res.data)
+          ? res.data
+          : (Array.isArray(res.data?.items)
+            ? res.data.items
+            : (Array.isArray(res.data?.data) ? res.data.data : []));
+        setOrders(rawItems);
+        const pag = res.data?.pagination || res.pagination;
+        if (pag) {
+          setTotalPages(Math.ceil((pag.total || rawItems.length) / 20));
         }
+      } else {
+        setOrders([]);
       }
     } catch (err) {
       console.warn('Erreur lors du chargement de l\'historique :', err.message);

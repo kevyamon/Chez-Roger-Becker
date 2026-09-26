@@ -18,6 +18,7 @@ import { Header } from './components/layout/Header';
 import { TabBar } from './components/layout/TabBar';
 import { DishDetailModal } from './components/menu/DishDetailModal';
 import { PwaInstallBanner } from './components/ui/PwaInstallBanner';
+import { LoadingSpinner } from './components/ui/LoadingSpinner';
 
 // Pages
 import { HomePage } from './pages/public/HomePage';
@@ -211,7 +212,12 @@ export function App() {
       case 'driver-login':
       case 'auth': {
         if (isAuthLoading && !isAuthenticated) {
-          return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: 'var(--text-secondary)' }}>Chargement de votre session...</div>;
+          return (
+            <LoadingSpinner
+              message="Chargement de votre session..."
+              subMessage="Vérification sécurisée de vos accès en cours..."
+            />
+          );
         }
         if (isAuthenticated) {
           if (isAdmin) return <AdminDashboardPage />;
