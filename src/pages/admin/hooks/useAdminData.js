@@ -1,11 +1,11 @@
 /**
  * Hook personnalisé de synchronisation des données administratives (useAdminData).
- * Chargement résilient via Promise.allSettled et écoute en temps réel Socket.IO.
+ * Chargement résilient via Promise.allSettled et synchronisation temps réel Socket.IO & cycle mobile.
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../../../services/api';
-import { socket, joinAdminRoom } from '../../../services/socket';
+import { socket, joinAdminRoom, leaveAdminRoom } from '../../../services/socket';
 import { useToast } from '../../../context/ToastContext';
 import { useAdminDrivers } from './useAdminDrivers';
 
@@ -34,7 +34,6 @@ export const useAdminData = () => {
       ]);
 
       const [dashRes, setRes, ordersRes, dishesRes, catRes, driversRes] = results;
-
       if (dashRes.status === 'fulfilled' && dashRes.value?.success) setDashboardData(dashRes.value.data);
       if (setRes.status === 'fulfilled' && setRes.value?.success) setSettings(setRes.value.data?.settings || setRes.value.data);
       if (ordersRes.status === 'fulfilled' && ordersRes.value?.success) setOrders(ordersRes.value.data?.items || ordersRes.value.data || []);
@@ -42,8 +41,7 @@ export const useAdminData = () => {
       if (catRes.status === 'fulfilled' && catRes.value?.success) setCategories(catRes.value.data?.categories || catRes.value.data || []);
       if (driversRes.status === 'fulfilled' && driversRes.value?.success) {
         const dData = driversRes.value.data;
-        const dList = Array.isArray(dData?.drivers) ? dData.drivers : Array.isArray(dData) ? dData : [];
-        setDrivers(dList);
+        setDrivers(Array.isArray(dData?.drivers) ? dData.drivers : Array.isArray(dData) ? dData : []);
       }
     } catch (err) {
       showError(err.message || 'Erreur lors de la synchronisation des données.');
@@ -60,32 +58,21 @@ export const useAdminData = () => {
       if (!newOrder?._id) return;
       setOrders((prev) => [newOrder, ...prev.filter((o) => o._id !== newOrder._id)]);
       showInfo(`Nouvelle commande : #${newOrder.orderNumber}`);
-      setDashboardData((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          kpi: {
-            ...prev.kpi,
-            pendingCount: (prev.kpi?.pendingCount || 0) + 1,
-            todayRevenue: (prev.kpi?.todayRevenue || 0) + (newOrder.total || 0)
-          }
-        };
-      });
+      setDashboardData((prev) => prev ? {
+        ...prev,
+        kpi: {
+          ...prev.kpi,
+          pendingCount: (prev.kpi?.pendingCount || 0) + 1,
+          todayRevenue: (prev.kpi?.todayRevenue || 0) + (newOrder.total || 0)
+        }
+      } : prev);
     };
 
     const onOrderStatusChanged = (upd) => {
       setOrders((prev) => prev.map((o) => (o._id === upd.orderId || o.orderNumber === upd.orderNumber ? { ...o, ...upd } : o)));
     };
-
-    const onOrderViewed = ({ orderId }) => {
-      setOrders((prev) => prev.map((o) => (o._id === orderId ? { ...o, isViewedByAdmin: true } : o)));
-    };
-
-    const onOrderUpdated = (upd) => {
-      if (!upd?._id) return;
-      setOrders((prev) => prev.map((o) => (o._id === upd._id ? { ...o, ...upd } : o)));
-    };
-
+    const onOrderViewed = ({ orderId }) => setOrders((prev) => prev.map((o) => (o._id === orderId ? { ...o, isViewedByAdmin: true } : o)));
+    const onOrderUpdated = (upd) => upd?._id && setOrders((prev) => prev.map((o) => (o._id === upd._id ? { ...o, ...upd } : o)));
     const onRestaurantUpdated = (upd) => setSettings((prev) => (prev ? { ...prev, ...upd } : upd));
     const onDriverCreated = (d) => d?._id && setDrivers((prev) => [d, ...prev.filter((item) => item._id !== d._id)]);
     const onDriverUpdated = (d) => d?._id && setDrivers((prev) => prev.map((item) => (item._id === d._id ? { ...item, ...d } : item)));
@@ -102,7 +89,14 @@ export const useAdminData = () => {
     socket.on('driver:status-changed', onDriverStatusChanged);
     socket.on('driver:deleted', onDriverDeleted);
 
+    const handleVisibilitySync = () => {
+      if (document.visibilityState === 'visible') fetchAllAdminData();
+    };
+    document.addEventListener('visibilitychange', handleVisibilitySync);
+    window.addEventListener('focus', handleVisibilitySync);
+
     return () => {
+      leaveAdminRoom();
       socket.off('order:created', onOrderCreated);
       socket.off('order:status-changed', onOrderStatusChanged);
       socket.off('order:viewed', onOrderViewed);
@@ -112,15 +106,15 @@ export const useAdminData = () => {
       socket.off('driver:updated', onDriverUpdated);
       socket.off('driver:status-changed', onDriverStatusChanged);
       socket.off('driver:deleted', onDriverDeleted);
+      document.removeEventListener('visibilitychange', handleVisibilitySync);
+      window.removeEventListener('focus', handleVisibilitySync);
     };
   }, [fetchAllAdminData, showInfo]);
 
   const toggleStoreStatus = async () => {
     try {
       setIsUpdatingStore(true);
-      const isCurrentlyOpen = settings?.isEffectivelyOpen !== undefined
-        ? Boolean(settings.isEffectivelyOpen)
-        : Boolean(settings?.isOpen !== false);
+      const isCurrentlyOpen = settings?.isEffectivelyOpen !== undefined ? Boolean(settings.isEffectivelyOpen) : Boolean(settings?.isOpen !== false);
       const newStatus = !isCurrentlyOpen;
       const res = await apiClient.patch('/admin/settings', { isOpen: newStatus });
       if (res.success && (res.data?.settings || res.data)) {
@@ -149,20 +143,13 @@ export const useAdminData = () => {
 
   const saveDish = async (dishData) => {
     try {
-      if (dishData._id) {
-        const res = await apiClient.patch(`/admin/dishes/${dishData._id}`, dishData);
-        if (res.success && res.data?.dish) {
-          setDishes((prev) => prev.map((d) => (d._id === dishData._id ? res.data.dish : d)));
-          showSuccess('Plat mis à jour avec succès.');
-          return true;
-        }
-      } else {
-        const res = await apiClient.post('/admin/dishes', dishData);
-        if (res.success && res.data?.dish) {
-          setDishes((prev) => [res.data.dish, ...prev]);
-          showSuccess('Nouveau plat ajouté à la carte.');
-          return true;
-        }
+      const endpoint = dishData._id ? `/admin/dishes/${dishData._id}` : '/admin/dishes';
+      const method = dishData._id ? apiClient.patch : apiClient.post;
+      const res = await method(endpoint, dishData);
+      if (res.success && res.data?.dish) {
+        setDishes((prev) => dishData._id ? prev.map((d) => (d._id === dishData._id ? res.data.dish : d)) : [res.data.dish, ...prev]);
+        showSuccess(dishData._id ? 'Plat mis à jour avec succès.' : 'Nouveau plat ajouté à la carte.');
+        return true;
       }
       return false;
     } catch (err) {
@@ -210,18 +197,16 @@ export const useAdminData = () => {
     }
   };
 
-  // Marquage d'une commande comme déjà vue dès la consultation de son détail
   const markOrderAsViewed = async (orderId) => {
     if (!orderId) return;
     setOrders((prev) => prev.map((o) => (o._id === orderId ? { ...o, isViewedByAdmin: true } : o)));
     try {
       await apiClient.patch(`/admin/orders/${orderId}/viewed`);
     } catch {
-      // Échec silencieux pour préserver la fluidité de consultation
+      // Ignoré pour fluidité
     }
   };
 
-  // Assignation manuelle d'un coursier disponible
   const assignDriverToOrder = async (orderId, driverId) => {
     try {
       const res = await apiClient.post(`/admin/orders/${orderId}/assign-driver`, { driverId });
@@ -262,3 +247,4 @@ export const useAdminData = () => {
     saveSettings
   };
 };
+

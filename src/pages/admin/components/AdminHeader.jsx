@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Power, Sun, Moon, LogOut, ShieldCheck, Store, Clock } from 'lucide-react';
+import { Power, Sun, Moon, LogOut, ShieldCheck, Store, Clock, RotateCw } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 
 export const AdminHeader = ({
@@ -12,7 +12,9 @@ export const AdminHeader = ({
   isDark,
   onToggleTheme,
   onToggleStoreStatus,
-  isUpdatingStore
+  isUpdatingStore,
+  onRefresh,
+  isRefreshing = false
 }) => {
   const { user, logout } = useAuth();
   const isManuallyOpen = Boolean(restaurantSettings?.isOpen !== false);
@@ -36,6 +38,26 @@ export const AdminHeader = ({
         </div>
 
         <div style={actionsRowStyle}>
+          {typeof onRefresh === 'function' && (
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              style={{
+                ...actionIconButtonStyle,
+                opacity: isRefreshing ? 0.65 : 1
+              }}
+              title="Actualiser les données"
+              aria-label="Actualiser les données"
+            >
+              <RotateCw
+                size={18}
+                color="var(--color-primary)"
+                className={isRefreshing ? 'animate-spin' : ''}
+              />
+            </button>
+          )}
+
           <button
             type="button"
             onClick={onToggleTheme}

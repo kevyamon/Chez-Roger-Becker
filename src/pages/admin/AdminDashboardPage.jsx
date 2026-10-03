@@ -14,6 +14,7 @@ import { AdminSectionRouter } from './components/AdminSectionRouter';
 import { AdminOrderDetailsModal } from './components/AdminOrderDetailsModal';
 import { DishEditModal } from './components/DishEditModal';
 import { NotificationPermissionBanner } from '../../components/ui/NotificationPermissionBanner';
+import { PullToRefreshContainer } from '../../components/ui/PullToRefreshContainer';
 
 export const AdminDashboardPage = () => {
   const [activeSection, setActiveSection] = useState('kpis');
@@ -39,15 +40,21 @@ export const AdminDashboardPage = () => {
   }, []);
 
   return (
-    <div style={containerStyle}>
-      <div className="animate-fade-in" style={contentWrapperStyle}>
-        <AdminHeader
-          restaurantSettings={adminData.settings}
-          isDark={isDark}
-          onToggleTheme={handleToggleTheme}
-          onToggleStoreStatus={adminData.toggleStoreStatus}
-          isUpdatingStore={adminData.isUpdatingStore}
-        />
+    <PullToRefreshContainer
+      onRefresh={adminData.fetchAllAdminData}
+      isRefreshing={adminData.isLoading}
+    >
+      <div style={containerStyle}>
+        <div className="animate-fade-in" style={contentWrapperStyle}>
+          <AdminHeader
+            restaurantSettings={adminData.settings}
+            isDark={isDark}
+            onToggleTheme={handleToggleTheme}
+            onToggleStoreStatus={adminData.toggleStoreStatus}
+            isUpdatingStore={adminData.isUpdatingStore}
+            onRefresh={adminData.fetchAllAdminData}
+            isRefreshing={adminData.isLoading}
+          />
 
         {/* Bannière de notifications push pour l'administration */}
         <NotificationPermissionBanner role="ADMIN" />
@@ -117,7 +124,8 @@ export const AdminDashboardPage = () => {
         onSaveDish={adminData.saveDish}
       />
     </div>
-  );
+  </PullToRefreshContainer>
+);
 };
 
 const containerStyle = {

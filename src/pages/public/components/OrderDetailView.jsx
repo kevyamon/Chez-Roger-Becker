@@ -3,8 +3,8 @@
  */
 
 import React, { useEffect } from 'react';
-import { Bike, Phone, ArrowLeft, RefreshCw, MapPin, Store } from 'lucide-react';
-import { socket, joinOrderRoom } from '../../../services/socket';
+import { Bike, Phone, ArrowLeft, RefreshCw, MapPin, Store, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { socket, joinOrderRoom, leaveOrderRoom } from '../../../services/socket';
 import { MapPicker } from '../../../components/map/MapPicker';
 import { NotificationPermissionBanner } from '../../../components/ui/NotificationPermissionBanner';
 import { OrderTimelineCard } from './OrderTimelineCard';
@@ -62,6 +62,7 @@ export const OrderDetailView = ({
       socket.on('restaurant:updated', handleRestaurantUpdate);
 
       return () => {
+        leaveOrderRoom(order.trackingToken);
         socket.off('order:status-changed', handleStatusChange);
         socket.off('restaurant:updated', handleRestaurantUpdate);
       };
@@ -114,7 +115,34 @@ export const OrderDetailView = ({
         </div>
       </div>
 
-      {/* 3. TIMELINE DES ÉTAPES */}
+      {/* 3. CODE DE LIVRAISON SÉCURISÉ (Anti-litige) */}
+      {order.deliveryPin && order.status !== 'CANCELLED' && (
+        <div className="card-surface" style={pinCardStyle}>
+          <div style={pinHeaderStyle}>
+            <ShieldCheck size={18} color="var(--color-primary)" />
+            <span style={pinTitleStyle}>Code secret de livraison</span>
+          </div>
+          {order.status === 'DELIVERED' ? (
+            <div style={pinDeliveredBadgeStyle}>
+              <CheckCircle2 size={16} color="var(--status-success, #16A34A)" />
+              <span>Commande remise et validée avec succès</span>
+            </div>
+          ) : (
+            <div style={pinContentStyle}>
+              <div style={pinBoxesContainerStyle}>
+                {order.deliveryPin.split('').map((digit, idx) => (
+                  <span key={idx} style={pinBoxStyle}>{digit}</span>
+                ))}
+              </div>
+              <p style={pinDescStyle}>
+                Communiquez ce code au livreur à la réception de vos plats pour valider la livraison.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 4. TIMELINE DES ÉTAPES */}
       <OrderTimelineCard currentStatus={order.status} isRestaurantClosed={isPendingPickup && isRestaurantClosed} />
 
       {/* 4. CARTE DE SUIVI EN DIRECT */}
@@ -181,3 +209,13 @@ const addressTextStyle = { fontSize: '0.82rem', color: 'var(--text-secondary)', 
 const driverCardStyle = { padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' };
 const driverAvatarStyle = { width: '42px', height: '42px', borderRadius: '12px', backgroundColor: 'var(--color-secondary-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center' };
 const callBtnStyle = { display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: 'var(--color-accent)', color: '#FFFFFF', padding: '8px 14px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 700, textDecoration: 'none', boxShadow: '0 4px 10px rgba(2, 132, 199, 0.3)' };
+
+const pinCardStyle = { padding: '16px 18px', backgroundColor: 'var(--color-primary-surface)', border: '1.5px solid var(--color-primary-light, rgba(230, 81, 0, 0.3))', display: 'flex', flexDirection: 'column', gap: '10px' };
+const pinHeaderStyle = { display: 'flex', alignItems: 'center', gap: '8px' };
+const pinTitleStyle = { fontSize: '0.86rem', fontWeight: 800, color: 'var(--color-primary-dark, #BF360C)', textTransform: 'uppercase', letterSpacing: '0.04em' };
+const pinContentStyle = { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', padding: '6px 0' };
+const pinBoxesContainerStyle = { display: 'flex', gap: '10px', justifyContent: 'center' };
+const pinBoxStyle = { width: '46px', height: '52px', backgroundColor: 'var(--bg-elevated)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-primary)', border: '1.5px solid var(--border-color)', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' };
+const pinDescStyle = { fontSize: '0.78rem', color: 'var(--text-secondary)', textAlign: 'center', maxWidth: '340px', lineHeight: 1.4 };
+const pinDeliveredBadgeStyle = { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.84rem', fontWeight: 700, color: 'var(--status-success, #16A34A)', padding: '6px 0' };
+

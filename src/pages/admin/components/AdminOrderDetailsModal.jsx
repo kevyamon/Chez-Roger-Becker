@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { X, User, Phone, MapPin, Truck, Package, Bike } from 'lucide-react';
+import { X, User, Phone, MapPin, Truck, Package, Bike, KeyRound } from 'lucide-react';
 import { theme } from '../../../styles/theme';
 import { getOrderStatusLabel, getPaymentMethodLabel, getOrderStatusBadgeStyle } from '../../../utils/statusLabels';
 import { AssignDriverModal } from './AssignDriverModal';
@@ -65,6 +65,21 @@ export const AdminOrderDetailsModal = ({ order, onClose, drivers = [], onAssignD
               </div>
             </div>
           </div>
+
+          {/* Badge PIN de sécurité pour arbitrage / support */}
+          {order.deliveryPin && (
+            <div style={pinAdminBadgeStyle}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <KeyRound size={16} color="var(--color-primary)" />
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                  Code PIN de livraison client :
+                </span>
+              </div>
+              <strong style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-primary)', letterSpacing: '0.15em' }}>
+                {order.deliveryPin}
+              </strong>
+            </div>
+          )}
 
           {/* Informations Client & Livraison */}
           <div style={infoGridStyle}>
@@ -185,78 +200,17 @@ export const AdminOrderDetailsModal = ({ order, onClose, drivers = [], onAssignD
   );
 };
 
-const backdropStyle = {
-  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-  backgroundColor: 'rgba(0, 0, 0, 0.65)', backdropFilter: 'blur(4px)',
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  zIndex: 9999, padding: '16px'
-};
+const backdropStyle = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.65)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px' };
+const modalContainerStyle = { backgroundColor: 'var(--bg-elevated)', borderRadius: theme.radii.lg, maxWidth: '560px', width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 40px rgba(0,0,0,0.25)', overflow: 'hidden' };
+const headerStyle = { padding: '16px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-card-header)' };
+const closeButtonStyle = { background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' };
+const bodyStyle = { padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px' };
+const summaryCardStyle = { padding: '14px 16px', backgroundColor: 'var(--color-primary-surface)', borderRadius: theme.radii.md, display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid var(--color-primary-light)' };
+const pinAdminBadgeStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', backgroundColor: 'var(--color-primary-surface)', borderRadius: '10px', border: '1px dashed var(--color-primary)' };
+const infoGridStyle = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' };
+const sectionBoxStyle = { padding: '12px 14px', backgroundColor: 'var(--bg-secondary)', borderRadius: theme.radii.md, border: '1px solid var(--border-color)' };
+const sectionTitleStyle = { fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' };
+const itemRowStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--border-color)' };
+const assignDriverBtnStyle = { display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '8px', backgroundColor: 'var(--color-primary)', color: '#FFFFFF', border: 'none', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', transition: 'opacity 0.2s ease' };
+const changeDriverBtnStyle = { display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '5px 10px', borderRadius: '6px', backgroundColor: 'var(--bg-card-header)', color: 'var(--color-primary)', border: '1px solid var(--border-color)', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer' };
 
-const modalContainerStyle = {
-  backgroundColor: 'var(--bg-elevated)', borderRadius: theme.radii.lg,
-  maxWidth: '560px', width: '100%', maxHeight: '90vh',
-  display: 'flex', flexDirection: 'column',
-  boxShadow: '0 20px 40px rgba(0,0,0,0.25)', overflow: 'hidden'
-};
-
-const headerStyle = {
-  padding: '16px 20px', borderBottom: '1px solid var(--border-color)',
-  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-  backgroundColor: 'var(--bg-card-header)'
-};
-
-const closeButtonStyle = {
-  background: 'none', border: 'none', color: 'var(--text-muted)',
-  cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center'
-};
-
-const bodyStyle = {
-  padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px'
-};
-
-const summaryCardStyle = {
-  padding: '14px 16px', backgroundColor: 'var(--color-primary-surface)',
-  borderRadius: theme.radii.md, display: 'flex', justifyContent: 'space-between',
-  alignItems: 'center', border: '1px solid var(--color-primary-light)'
-};
-
-const infoGridStyle = {
-  display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px'
-};
-
-const sectionBoxStyle = {
-  padding: '12px 14px', backgroundColor: 'var(--bg-secondary)',
-  borderRadius: theme.radii.md, border: '1px solid var(--border-color)'
-};
-
-const sectionTitleStyle = {
-  fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)',
-  display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px',
-  textTransform: 'uppercase', letterSpacing: '0.04em'
-};
-
-const itemRowStyle = {
-  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-  padding: '6px 0', borderBottom: '1px solid var(--border-color)'
-};
-
-const stepRowStyle = {
-  display: 'flex', alignItems: 'flex-start', gap: '10px',
-  padding: '6px 0', borderBottom: '1px dashed var(--border-color)'
-};
-
-const assignDriverBtnStyle = {
-  display: 'inline-flex', alignItems: 'center', gap: '6px',
-  padding: '6px 12px', borderRadius: '8px',
-  backgroundColor: 'var(--color-primary)', color: '#FFFFFF',
-  border: 'none', fontSize: '0.78rem', fontWeight: 700,
-  cursor: 'pointer', transition: 'opacity 0.2s ease'
-};
-
-const changeDriverBtnStyle = {
-  display: 'inline-flex', alignItems: 'center', gap: '5px',
-  padding: '5px 10px', borderRadius: '6px',
-  backgroundColor: 'var(--bg-card-header)', color: 'var(--color-primary)',
-  border: '1px solid var(--border-color)', fontSize: '0.74rem', fontWeight: 700,
-  cursor: 'pointer'
-};

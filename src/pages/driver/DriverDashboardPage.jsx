@@ -6,9 +6,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Navigation, Bike, History, Package, User } from 'lucide-react';
 import { apiClient } from '../../services/api';
-import { socket } from '../../services/socket';
+import { socket, joinDriversRoom, leaveDriversRoom, joinDriverPersonalRoom, leaveDriverPersonalRoom } from '../../services/socket';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { PullToRefreshContainer } from '../../components/ui/PullToRefreshContainer';
 import { DriverHeaderCard } from './components/DriverHeaderCard';
 import { DriverActiveDeliveryCard } from './components/DriverActiveDeliveryCard';
 import { DriverAvailableOrdersList } from './components/DriverAvailableOrdersList';
@@ -19,7 +20,7 @@ export const DriverDashboardPage = () => {
   const { user, logout } = useAuth();
   const { showSuccess, showError, showInfo } = useToast();
 
-  const [activeTab, setActiveTab] = useState('active'); // 'active' | 'available' | 'history' | 'profile'
+  const [activeTab, setActiveTab] = useState('active');
   const [driverStatus, setDriverStatus] = useState(user?.driverStatus || 'AVAILABLE');
   const [availableOrders, setAvailableOrders] = useState([]);
   const [activeDeliveries, setActiveDeliveries] = useState([]);
@@ -45,27 +46,40 @@ export const DriverDashboardPage = () => {
 
   useEffect(() => {
     fetchDashboardData();
-  }, [fetchDashboardData]);
+    joinDriversRoom();
+    if (user?._id) joinDriverPersonalRoom(user._id);
 
-  // Synchronisation temps réel Socket.IO pour les livreurs
-  useEffect(() => {
     const onOrderReady = () => {
       showInfo('Nouvelle commande prête pour livraison !');
       fetchDashboardData();
     };
-
-    const onOrderTaken = () => {
+    const onOrderTaken = () => fetchDashboardData();
+    const onAssignedToMe = () => {
+      showInfo('Une course vous a été directement assignée !');
       fetchDashboardData();
+      setActiveTab('active');
     };
 
     socket.on('order:ready_for_pickup', onOrderReady);
     socket.on('order:taken', onOrderTaken);
+    socket.on('order:assigned_to_me', onAssignedToMe);
+
+    const handleVisibilitySync = () => {
+      if (document.visibilityState === 'visible') fetchDashboardData();
+    };
+    document.addEventListener('visibilitychange', handleVisibilitySync);
+    window.addEventListener('focus', handleVisibilitySync);
 
     return () => {
+      leaveDriversRoom();
+      if (user?._id) leaveDriverPersonalRoom(user._id);
       socket.off('order:ready_for_pickup', onOrderReady);
       socket.off('order:taken', onOrderTaken);
+      socket.off('order:assigned_to_me', onAssignedToMe);
+      document.removeEventListener('visibilitychange', handleVisibilitySync);
+      window.removeEventListener('focus', handleVisibilitySync);
     };
-  }, [fetchDashboardData, showInfo]);
+  }, [fetchDashboardData, showInfo, user?._id]);
 
   const handleToggleStatus = async (newStatus) => {
     try {
@@ -93,9 +107,9 @@ export const DriverDashboardPage = () => {
     }
   };
 
-  const handleOrderAction = async (orderId, endpoint, successMsg) => {
+  const handleOrderAction = async (orderId, endpoint, successMsg, payload = {}) => {
     try {
-      const res = await apiClient.post(`/driver/orders/${orderId}/${endpoint}`);
+      const res = await apiClient.post(`/driver/orders/${orderId}/${endpoint}`, payload);
       if (res.success) {
         showSuccess(successMsg);
         fetchDashboardData();
@@ -113,107 +127,75 @@ export const DriverDashboardPage = () => {
   };
 
   return (
-    <div className="animate-fade-in" style={containerStyle}>
-      {/* 1. EN-TÊTE DU LIVREUR (masqué sur la vue profil pour ne pas doubler les cartes) */}
-      {activeTab !== 'profile' && (
-        <DriverHeaderCard
-          user={currentUser}
-          driverStatus={driverStatus}
-          onToggleStatus={handleToggleStatus}
-          onOpenProfile={() => setActiveTab('profile')}
-          onLogout={logout}
-        />
-      )}
+    <PullToRefreshContainer onRefresh={fetchDashboardData} isRefreshing={isLoading}>
+      <div className="animate-fade-in" style={containerStyle}>
+        {activeTab !== 'profile' && (
+          <DriverHeaderCard
+            user={currentUser}
+            driverStatus={driverStatus}
+            onToggleStatus={handleToggleStatus}
+            onOpenProfile={() => setActiveTab('profile')}
+            onLogout={logout}
+          />
+        )}
 
-      {/* 2. ONGLETS DE NAVIGATION LIVREUR */}
-      <div style={navTabsStyle}>
-        <button
-          type="button"
-          onClick={() => setActiveTab('active')}
-          style={activeTab === 'active' ? activeTabStyle : tabStyle}
-        >
-          <Navigation size={14} />
-          Courses {activeDeliveries.length > 0 ? `(${activeDeliveries.length})` : ''}
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('available')}
-          style={activeTab === 'available' ? activeTabStyle : tabStyle}
-        >
-          <Package size={14} />
-          Disponibles {availableOrders.length > 0 ? `(${availableOrders.length})` : ''}
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('history')}
-          style={activeTab === 'history' ? activeTabStyle : tabStyle}
-        >
-          <History size={14} />
-          Historique
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('profile')}
-          style={activeTab === 'profile' ? activeTabStyle : tabStyle}
-        >
-          <User size={14} />
-          Mon Profil
-        </button>
-      </div>
-
-      {/* 3. CONTENU SELON L'ONGLET SÉLECTIONNÉ */}
-      {activeTab === 'active' && (
-        <div style={sectionStyle}>
-          {activeDeliveries.length === 0 ? (
-            <div className="card-surface" style={emptyStateStyle}>
-              <Bike size={36} color="var(--text-muted)" />
-              <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)' }}>
-                Aucune course active en ce moment.
-              </p>
-              {availableOrders.length > 0 && (
-                <button type="button" onClick={() => setActiveTab('available')} style={ctaLinkStyle}>
-                  Voir les {availableOrders.length} commande(s) disponible(s)
-                </button>
-              )}
-            </div>
-          ) : (
-            activeDeliveries.map((delivery) => (
-              <DriverActiveDeliveryCard
-                key={delivery._id}
-                delivery={delivery}
-                onAction={handleOrderAction}
-                onOpenNavigation={handleOpenNavigation}
-              />
-            ))
-          )}
+        <div style={navTabsStyle}>
+          <button type="button" onClick={() => setActiveTab('active')} style={activeTab === 'active' ? activeTabStyle : tabStyle}>
+            <Navigation size={14} /> Courses {activeDeliveries.length > 0 ? `(${activeDeliveries.length})` : ''}
+          </button>
+          <button type="button" onClick={() => setActiveTab('available')} style={activeTab === 'available' ? activeTabStyle : tabStyle}>
+            <Package size={14} /> Disponibles {availableOrders.length > 0 ? `(${availableOrders.length})` : ''}
+          </button>
+          <button type="button" onClick={() => setActiveTab('history')} style={activeTab === 'history' ? activeTabStyle : tabStyle}>
+            <History size={14} /> Historique
+          </button>
+          <button type="button" onClick={() => setActiveTab('profile')} style={activeTab === 'profile' ? activeTabStyle : tabStyle}>
+            <User size={14} /> Profil
+          </button>
         </div>
-      )}
 
-      {activeTab === 'available' && (
-        <DriverAvailableOrdersList
-          orders={availableOrders}
-          onAcceptOrder={handleAcceptOrder}
-          onRefresh={fetchDashboardData}
-          isLoading={isLoading}
-        />
-      )}
+        {activeTab === 'active' && (
+          <div style={sectionStyle}>
+            {activeDeliveries.length === 0 ? (
+              <div className="card-surface" style={emptyStateStyle}>
+                <Bike size={36} color="var(--text-muted)" />
+                <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)' }}>Aucune course active en ce moment.</p>
+                {availableOrders.length > 0 && (
+                  <button type="button" onClick={() => setActiveTab('available')} style={ctaLinkStyle}>
+                    Voir les {availableOrders.length} commande(s) disponible(s)
+                  </button>
+                )}
+              </div>
+            ) : (
+              activeDeliveries.map((delivery) => (
+                <DriverActiveDeliveryCard
+                  key={delivery._id}
+                  delivery={delivery}
+                  onAction={handleOrderAction}
+                  onOpenNavigation={handleOpenNavigation}
+                />
+              ))
+            )}
+          </div>
+        )}
 
-      {activeTab === 'history' && (
-        <DriverHistorySection driverStats={driverStats} />
-      )}
-
-      {activeTab === 'profile' && (
-        <DriverProfileSection
-          user={currentUser}
-          driverStats={driverStats}
-          driverStatus={driverStatus}
-          onToggleStatus={handleToggleStatus}
-          onBack={() => setActiveTab('active')}
-          onProfileUpdated={(updated) => setCurrentUser(updated)}
-          onLogout={logout}
-        />
-      )}
-    </div>
+        {activeTab === 'available' && (
+          <DriverAvailableOrdersList orders={availableOrders} onAcceptOrder={handleAcceptOrder} onRefresh={fetchDashboardData} isLoading={isLoading} />
+        )}
+        {activeTab === 'history' && <DriverHistorySection driverStats={driverStats} />}
+        {activeTab === 'profile' && (
+          <DriverProfileSection
+            user={currentUser}
+            driverStats={driverStats}
+            driverStatus={driverStatus}
+            onToggleStatus={handleToggleStatus}
+            onBack={() => setActiveTab('active')}
+            onProfileUpdated={(updated) => setCurrentUser(updated)}
+            onLogout={logout}
+          />
+        )}
+      </div>
+    </PullToRefreshContainer>
   );
 };
 
@@ -283,3 +265,4 @@ const ctaLinkStyle = {
   cursor: 'pointer',
   textDecoration: 'underline'
 };
+
