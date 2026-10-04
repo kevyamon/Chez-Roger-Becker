@@ -244,7 +244,11 @@ export const useAdminData = () => {
     createDriver,
     updateDriver,
     deleteDriver,
+    setOrders,
+    setDashboardData,
     saveSettings
   };
 };
+
+
 

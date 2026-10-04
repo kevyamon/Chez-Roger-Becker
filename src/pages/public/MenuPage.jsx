@@ -1,12 +1,14 @@
 /**
  * Page de la carte complète du menu (/menu).
- * Comprend la recherche instantanée, le filtrage par type (Nourriture/Boisson), par catégorie et l'ajout au panier.
+ * Comprend la recherche instantanée, le filtrage par type et catégorie, avec gestion des squelettes de chargement.
  */
 
 import React, { useState, useMemo } from 'react';
 import { Search, UtensilsCrossed, Utensils, GlassWater } from 'lucide-react';
 import { CategoryFilter } from '../../components/menu/CategoryFilter';
 import { DishCard } from '../../components/menu/DishCard';
+import { DishCardSkeleton } from '../../components/menu/DishCardSkeleton';
+import { ServerWakingNotice } from '../../components/ui/ServerWakingNotice';
 
 const TYPE_OPTIONS = [
   { id: 'ALL', label: 'Tout le menu', icon: null },
@@ -16,7 +18,13 @@ const TYPE_OPTIONS = [
 
 const DEFAULT_CATEGORIES = ['Normal', 'VIP', 'Spécial'];
 
-export const MenuPage = ({ dishes = [], categories = [], onSelectDish }) => {
+export const MenuPage = ({
+  dishes = [],
+  categories = [],
+  isLoading = false,
+  isServerWaking = false,
+  onSelectDish
+}) => {
   const [selectedType, setSelectedType] = useState('ALL');
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -58,6 +66,14 @@ export const MenuPage = ({ dishes = [], categories = [], onSelectDish }) => {
         </div>
       </div>
 
+      {/* Bannière d'information élégante si le serveur gratuit est en cours de réveil */}
+      {isServerWaking && dishes.length === 0 && (
+        <ServerWakingNotice
+          message="Chargement de la carte en cours…"
+          subMessage="Le serveur prépare les braises. Toutes nos spécialités arrivent dans quelques secondes."
+        />
+      )}
+
       {/* 2. SÉLECTION RAPIDE DU TYPE (Tout / Nourriture / Boisson) */}
       <div style={typeTabsContainerStyle}>
         {TYPE_OPTIONS.map((opt) => {
@@ -87,9 +103,16 @@ export const MenuPage = ({ dishes = [], categories = [], onSelectDish }) => {
         onSelectCategory={setSelectedCategory}
       />
 
-      {/* 4. LISTE DES PLATS */}
+      {/* 4. LISTE DES PLATS (OU SQUELETTES DE CHARGEMENT) */}
       <div style={listContainerStyle}>
-        {filteredDishes.length > 0 ? (
+        {isLoading && dishes.length === 0 ? (
+          <>
+            <DishCardSkeleton />
+            <DishCardSkeleton />
+            <DishCardSkeleton />
+            <DishCardSkeleton />
+          </>
+        ) : filteredDishes.length > 0 ? (
           filteredDishes.map((dish) => (
             <DishCard key={dish._id} dish={dish} onSelect={onSelectDish} />
           ))
@@ -97,7 +120,7 @@ export const MenuPage = ({ dishes = [], categories = [], onSelectDish }) => {
           <div style={emptyStateStyle}>
             <UtensilsCrossed size={40} color="var(--text-muted)" />
             <h4 style={emptyTitleStyle}>Aucun plat trouvé</h4>
-            <p style={emptyDescStyle}>Essayez d'ajuster vos termes de recherche ou de changer de filtre.</p>
+            <p style={emptyDescStyle}>Essayez d’ajuster vos termes de recherche ou de changer de filtre.</p>
           </div>
         )}
       </div>

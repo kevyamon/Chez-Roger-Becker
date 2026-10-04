@@ -1,16 +1,23 @@
 /**
  * Modale de détails complets d'une commande (AdminOrderDetailsModal).
- * Affiche l'ensemble des informations de livraison, plats, client, livreur et chronologie des statuts.
+ * Affiche l'ensemble des informations de livraison, plats, client, livreur, chronologie et actions d'archivage/suppression.
  */
 
 import React, { useState } from 'react';
-import { X, User, Phone, MapPin, Truck, Package, Bike, KeyRound } from 'lucide-react';
+import { X, User, Phone, MapPin, Truck, Package, Bike, KeyRound, Archive, Trash2 } from 'lucide-react';
 import { theme } from '../../../styles/theme';
 import { getOrderStatusLabel, getPaymentMethodLabel, getOrderStatusBadgeStyle } from '../../../utils/statusLabels';
 import { AssignDriverModal } from './AssignDriverModal';
 import { AdminOrderTimeline } from './AdminOrderTimeline';
 
-export const AdminOrderDetailsModal = ({ order, onClose, drivers = [], onAssignDriver }) => {
+export const AdminOrderDetailsModal = ({
+  order,
+  onClose,
+  drivers = [],
+  onAssignDriver,
+  onArchiveOrder,
+  onDeleteOrder
+}) => {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   if (!order) return null;
 
@@ -20,7 +27,24 @@ export const AdminOrderDetailsModal = ({ order, onClose, drivers = [], onAssignD
     return `${d.toLocaleDateString('fr-FR')} à ${d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
   };
 
-  const canAssignDriver = !['DELIVERED', 'CANCELLED'].includes(order.status);
+  const isCompleted = ['DELIVERED', 'CANCELLED'].includes(order.status);
+  const canAssignDriver = !isCompleted;
+
+  const handleArchive = () => {
+    if (onArchiveOrder) {
+      onArchiveOrder(order._id);
+      onClose();
+    }
+  };
+
+  const handleDelete = () => {
+    if (window.confirm(`Êtes-vous certain de vouloir supprimer définitivement la commande #${order.orderNumber} ?`)) {
+      if (onDeleteOrder) {
+        onDeleteOrder(order._id);
+        onClose();
+      }
+    }
+  };
 
   return (
     <div style={backdropStyle} onClick={onClose}>
@@ -183,6 +207,28 @@ export const AdminOrderDetailsModal = ({ order, onClose, drivers = [], onAssignD
             </div>
           </div>
 
+          {/* Actions d'archivage et de suppression en bas de modale */}
+          <div style={actionRowModalStyle}>
+            {onArchiveOrder && isCompleted && (
+              <button
+                type="button"
+                onClick={handleArchive}
+                style={modalArchiveBtnStyle}
+              >
+                <Archive size={15} /> Archiver la commande
+              </button>
+            )}
+            {onDeleteOrder && (isCompleted || order.status === 'CANCELLED') && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                style={modalDeleteBtnStyle}
+              >
+                <Trash2 size={15} /> Supprimer définitivement
+              </button>
+            )}
+          </div>
+
           {/* Historique chronologique des statuts */}
           <AdminOrderTimeline statusHistory={order.statusHistory} />
         </div>
@@ -213,4 +259,6 @@ const sectionTitleStyle = { fontSize: '0.8rem', fontWeight: 700, color: 'var(--t
 const itemRowStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--border-color)' };
 const assignDriverBtnStyle = { display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '8px', backgroundColor: 'var(--color-primary)', color: '#FFFFFF', border: 'none', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', transition: 'opacity 0.2s ease' };
 const changeDriverBtnStyle = { display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '5px 10px', borderRadius: '6px', backgroundColor: 'var(--bg-card-header)', color: 'var(--color-primary)', border: '1px solid var(--border-color)', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer' };
-
+const actionRowModalStyle = { display: 'flex', gap: '10px', alignItems: 'center', justifyContent: 'flex-end', paddingTop: '4px' };
+const modalArchiveBtnStyle = { display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '8px', backgroundColor: 'var(--bg-card-header)', color: 'var(--color-primary)', border: '1px solid var(--border-color)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' };
+const modalDeleteBtnStyle = { display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '8px', backgroundColor: 'var(--color-primary-surface)', color: 'var(--status-error)', border: '1px solid var(--border-color)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' };

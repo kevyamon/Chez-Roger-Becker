@@ -1,12 +1,14 @@
 /**
  * Tableau de bord administrateur (AdminDashboardPage).
- * Orchestrateur modulaire mobile-first avec réactivité temps réel Socket.IO.
+ * Orchestrateur modulaire mobile-first avec réactivité temps réel Socket.IO, archivage et purge.
  */
 
 import React, { useEffect, useState } from 'react';
 import { applyTheme } from '../../styles/theme';
 import { useAdminData } from './hooks/useAdminData';
 import { useAdminPromotions } from './hooks/useAdminPromotions';
+import { useAdminOrderArchive } from './hooks/useAdminOrderArchive';
+import { useAdminAuditLogs } from './hooks/useAdminAuditLogs';
 
 import { AdminHeader } from './components/AdminHeader';
 import { AdminTabBar } from './components/AdminTabBar';
@@ -27,6 +29,11 @@ export const AdminDashboardPage = () => {
 
   const adminData = useAdminData();
   const promoData = useAdminPromotions();
+  const { archiveOrder, unarchiveOrder, archiveCompletedOrders, deleteOrder } = useAdminOrderArchive(
+    adminData.setOrders || (() => {}),
+    adminData.setDashboardData || (() => {})
+  );
+  const { auditLogs, isLoadingAudit, fetchAuditLogs, deleteAuditLog, clearAuditLogs } = useAdminAuditLogs();
 
   const handleToggleTheme = () => {
     const nextDark = !isDark;
@@ -38,6 +45,12 @@ export const AdminDashboardPage = () => {
   useEffect(() => {
     applyTheme(isDark);
   }, []);
+
+  useEffect(() => {
+    if (activeSection === 'audit') {
+      fetchAuditLogs();
+    }
+  }, [activeSection, fetchAuditLogs]);
 
   return (
     <PullToRefreshContainer
@@ -56,76 +69,86 @@ export const AdminDashboardPage = () => {
             isRefreshing={adminData.isLoading}
           />
 
-        {/* Bannière de notifications push pour l'administration */}
-        <NotificationPermissionBanner role="ADMIN" />
+          {/* Bannière de notifications push pour l'administration */}
+          <NotificationPermissionBanner role="ADMIN" />
 
-        <main style={{ minHeight: '50vh' }}>
-          <AdminSectionRouter
-            activeSection={activeSection}
-            dashboardData={adminData.dashboardData}
-            orders={adminData.orders}
-            dishes={adminData.dishes}
-            categories={adminData.categories}
-            drivers={adminData.drivers}
-            settings={adminData.settings}
-            promotions={promoData.promotions}
-            isLoading={adminData.isLoading}
-            isLoadingPromos={promoData.isLoading}
-            onSelectOrder={(ord) => {
-              if (ord?._id) {
-                adminData.markOrderAsViewed(ord._id);
-              }
-              setSelectedOrder(ord);
-            }}
-            onUpdateOrderStatus={adminData.updateOrderStatus}
-            onOpenCreateDish={() => {
-              setSelectedDish(null);
-              setIsDishModalOpen(true);
-            }}
-            onOpenEditDish={(d) => {
-              setSelectedDish(d);
-              setIsDishModalOpen(true);
-            }}
-            onToggleAvailability={adminData.toggleDishAvailability}
-            onDeleteDish={adminData.deleteDish}
-            onCreateDriver={adminData.createDriver}
-            onUpdateDriver={adminData.updateDriver}
-            onDeleteDriver={adminData.deleteDriver}
-            onSaveSettings={adminData.saveSettings}
-            onSavePromotion={promoData.savePromotion}
-            onTogglePromotionStatus={promoData.togglePromotionStatus}
-            onDeletePromotion={promoData.deletePromotion}
-          />
-        </main>
-      </div>
+          <main style={{ minHeight: '50vh' }}>
+            <AdminSectionRouter
+              activeSection={activeSection}
+              dashboardData={adminData.dashboardData}
+              orders={adminData.orders}
+              dishes={adminData.dishes}
+              categories={adminData.categories}
+              drivers={adminData.drivers}
+              settings={adminData.settings}
+              promotions={promoData.promotions}
+              auditLogs={auditLogs}
+              isLoading={adminData.isLoading}
+              isLoadingPromos={promoData.isLoading}
+              isLoadingAudit={isLoadingAudit}
+              onSelectOrder={(ord) => {
+                if (ord?._id) {
+                  adminData.markOrderAsViewed(ord._id);
+                }
+                setSelectedOrder(ord);
+              }}
+              onUpdateOrderStatus={adminData.updateOrderStatus}
+              onArchiveOrder={archiveOrder}
+              onUnarchiveOrder={unarchiveOrder}
+              onDeleteOrder={deleteOrder}
+              onArchiveCompletedOrders={archiveCompletedOrders}
+              onDeleteLog={deleteAuditLog}
+              onClearLogs={clearAuditLogs}
+              onOpenCreateDish={() => {
+                setSelectedDish(null);
+                setIsDishModalOpen(true);
+              }}
+              onOpenEditDish={(d) => {
+                setSelectedDish(d);
+                setIsDishModalOpen(true);
+              }}
+              onToggleAvailability={adminData.toggleDishAvailability}
+              onDeleteDish={adminData.deleteDish}
+              onCreateDriver={adminData.createDriver}
+              onUpdateDriver={adminData.updateDriver}
+              onDeleteDriver={adminData.deleteDriver}
+              onSaveSettings={adminData.saveSettings}
+              onSavePromotion={promoData.savePromotion}
+              onTogglePromotionStatus={promoData.togglePromotionStatus}
+              onDeletePromotion={promoData.deletePromotion}
+            />
+          </main>
+        </div>
 
-      <AdminTabBar
-        activeSection={activeSection}
-        onSelectSection={setActiveSection}
-        pendingOrdersCount={adminData.unviewedOrdersCount}
-      />
-
-      {selectedOrder && (
-        <AdminOrderDetailsModal
-          isOpen={Boolean(selectedOrder)}
-          onClose={() => setSelectedOrder(null)}
-          order={adminData.orders.find((o) => o._id === selectedOrder._id) || selectedOrder}
-          drivers={adminData.drivers}
-          onUpdateStatus={adminData.updateOrderStatus}
-          onAssignDriver={adminData.assignDriverToOrder}
+        <AdminTabBar
+          activeSection={activeSection}
+          onSelectSection={setActiveSection}
+          pendingOrdersCount={adminData.unviewedOrdersCount}
         />
-      )}
 
-      <DishEditModal
-        isOpen={isDishModalOpen}
-        onClose={() => setIsDishModalOpen(false)}
-        dish={selectedDish}
-        categories={adminData.categories}
-        onSaveDish={adminData.saveDish}
-      />
-    </div>
-  </PullToRefreshContainer>
-);
+        {selectedOrder && (
+          <AdminOrderDetailsModal
+            isOpen={Boolean(selectedOrder)}
+            onClose={() => setSelectedOrder(null)}
+            order={adminData.orders.find((o) => o._id === selectedOrder._id) || selectedOrder}
+            drivers={adminData.drivers}
+            onUpdateStatus={adminData.updateOrderStatus}
+            onAssignDriver={adminData.assignDriverToOrder}
+            onArchiveOrder={archiveOrder}
+            onDeleteOrder={deleteOrder}
+          />
+        )}
+
+        <DishEditModal
+          isOpen={isDishModalOpen}
+          onClose={() => setIsDishModalOpen(false)}
+          dish={selectedDish}
+          categories={adminData.categories}
+          onSaveDish={adminData.saveDish}
+        />
+      </div>
+    </PullToRefreshContainer>
+  );
 };
 
 const containerStyle = {

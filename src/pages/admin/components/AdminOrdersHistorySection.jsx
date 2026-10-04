@@ -1,10 +1,10 @@
 /**
  * Section d'historique dédié des commandes terminées et livrées (AdminOrdersHistorySection).
- * Présente une liste épurée (numéro et montant) avec ouverture de modale détaillée au clic.
+ * Présente les commandes archivables avec suppression ciblée et ouverture de modale détaillée.
  */
 
-import React, { useState, useEffect } from 'react';
-import { Search, Calendar, ChevronRight, PackageCheck, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Search, Calendar, ChevronRight, PackageCheck, RefreshCw, Trash2, Archive } from 'lucide-react';
 import { apiClient } from '../../../services/api';
 import { AdminOrderDetailsModal } from './AdminOrderDetailsModal';
 import { theme } from '../../../styles/theme';
@@ -16,10 +16,9 @@ export const AdminOrdersHistorySection = () => {
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -37,10 +36,6 @@ export const AdminOrdersHistorySection = () => {
             ? res.data.items
             : (Array.isArray(res.data?.data) ? res.data.data : []));
         setOrders(rawItems);
-        const pag = res.data?.pagination || res.pagination;
-        if (pag) {
-          setTotalPages(Math.ceil((pag.total || rawItems.length) / 20));
-        }
       } else {
         setOrders([]);
       }
@@ -49,11 +44,11 @@ export const AdminOrdersHistorySection = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, search, dateFilter]);
 
   useEffect(() => {
     fetchHistory();
-  }, [page, dateFilter]);
+  }, [fetchHistory]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -61,22 +56,37 @@ export const AdminOrdersHistorySection = () => {
     fetchHistory();
   };
 
+  const handleArchiveOrder = async (orderId) => {
+    try {
+      const res = await apiClient.patch(`/admin/orders/${orderId}/archive`);
+      if (res.success) {
+        setOrders((prev) => prev.filter((o) => o._id !== orderId));
+        if (selectedOrder?._id === orderId) setSelectedOrder(null);
+      }
+    } catch (err) {
+      console.warn('Erreur archivage commande :', err.message);
+    }
+  };
+
+  const handleDeleteOrder = async (orderId) => {
+    if (!window.confirm('Êtes-vous certain de vouloir supprimer cette commande de l’historique ?')) {
+      return;
+    }
+    try {
+      const res = await apiClient.delete(`/admin/orders/${orderId}`);
+      if (res.success) {
+        setOrders((prev) => prev.filter((o) => o._id !== orderId));
+        if (selectedOrder?._id === orderId) setSelectedOrder(null);
+      }
+    } catch (err) {
+      console.warn('Erreur suppression commande :', err.message);
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* En-tête et filtres */}
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '12px',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          backgroundColor: 'var(--bg-elevated)',
-          padding: '14px 16px',
-          borderRadius: theme.radii.md,
-          border: '1px solid var(--border-color)'
-        }}
-      >
+      <div style={filterContainerStyle}>
         <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '8px', flex: 1, minWidth: '240px' }}>
           <div style={inputWrapperStyle}>
             <Search size={16} color="var(--text-muted)" />
@@ -134,8 +144,6 @@ export const AdminOrdersHistorySection = () => {
               key={ord._id}
               onClick={() => setSelectedOrder(ord)}
               style={cardStyle}
-              onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--color-primary)')}
-              onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border-color)')}
             >
               <div>
                 <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>
@@ -153,7 +161,30 @@ export const AdminOrdersHistorySection = () => {
                 <span style={{ ...getOrderStatusBadgeStyle(ord.status), fontSize: '0.72rem', fontWeight: 700, padding: '3px 8px', borderRadius: theme.radii.full }}>
                   {getOrderStatusLabel(ord.status)}
                 </span>
-                <ChevronRight size={18} color="var(--text-muted)" />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleArchiveOrder(ord._id);
+                  }}
+                  style={iconActionBtnStyle}
+                  title="Archiver pour nettoyer la liste"
+                  aria-label="Archiver"
+                >
+                  <Archive size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteOrder(ord._id);
+                  }}
+                  style={iconActionBtnDeleteStyle}
+                  title="Supprimer définitivement"
+                  aria-label="Supprimer"
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
             </div>
           ))}
@@ -162,10 +193,27 @@ export const AdminOrdersHistorySection = () => {
 
       {/* Modale de détails complets */}
       {selectedOrder && (
-        <AdminOrderDetailsModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />
+        <AdminOrderDetailsModal
+          order={selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+          onArchiveOrder={handleArchiveOrder}
+          onDeleteOrder={handleDeleteOrder}
+        />
       )}
     </div>
   );
+};
+
+const filterContainerStyle = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: '12px',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  backgroundColor: 'var(--bg-elevated)',
+  padding: '14px 16px',
+  borderRadius: theme.radii.md,
+  border: '1px solid var(--border-color)'
 };
 
 const inputWrapperStyle = {
@@ -222,6 +270,30 @@ const cardStyle = {
   alignItems: 'center',
   cursor: 'pointer',
   transition: 'border-color 0.2s ease, transform 0.15s ease'
+};
+
+const iconActionBtnStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '6px',
+  borderRadius: '6px',
+  backgroundColor: 'var(--bg-card-header)',
+  color: 'var(--color-primary)',
+  border: '1px solid var(--border-color)',
+  cursor: 'pointer'
+};
+
+const iconActionBtnDeleteStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '6px',
+  borderRadius: '6px',
+  backgroundColor: 'var(--color-primary-surface)',
+  color: 'var(--status-error)',
+  border: '1px solid var(--border-color)',
+  cursor: 'pointer'
 };
 
 const emptyStateStyle = {

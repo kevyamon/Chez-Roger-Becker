@@ -1,21 +1,26 @@
 /**
  * Page d'accueil publique Chez Roger Becker.
- * Vitrine gastronomique mobile-first avec mise en avant des grillades et des offres.
+ * Vitrine gastronomique mobile-first avec mise en avant des grillades, offres et skeletons de chargement.
  */
 
 import React from 'react';
 import { ArrowRight, Clock, MapPin, Phone } from 'lucide-react';
 import { DishCard } from '../../components/menu/DishCard';
+import { DishCardSkeleton } from '../../components/menu/DishCardSkeleton';
 import { Button } from '../../components/ui/Button';
 import { AnimatedHeroSlogan } from '../../components/ui/AnimatedHeroSlogan';
 import { PromoPopupModal } from '../../components/ui/PromoPopupModal';
+import { ServerWakingNotice } from '../../components/ui/ServerWakingNotice';
 import { HomePromoBanner } from './components/HomePromoBanner';
+import { HomePromoSkeleton } from './components/HomePromoSkeleton';
 import bgHeroImg from '../../assets/images/bg.png';
 
 export const HomePage = ({
   dishes = [],
   promotions = [],
   restaurant = {},
+  isLoading = false,
+  isServerWaking = false,
   onNavigate,
   onSelectDish
 }) => {
@@ -42,11 +47,13 @@ export const HomePage = ({
   return (
     <div className="animate-fade-in" style={pageStyle}>
       {/* Pop-up publicitaire automatique d'accueil */}
-      <PromoPopupModal
-        promotions={promotions}
-        onNavigate={onNavigate}
-        onSelectDish={onSelectDish}
-      />
+      {!isLoading && (
+        <PromoPopupModal
+          promotions={promotions}
+          onNavigate={onNavigate}
+          onSelectDish={onSelectDish}
+        />
+      )}
 
       {/* 1. HERO BANNER */}
       <section style={heroStyle}>
@@ -69,10 +76,22 @@ export const HomePage = ({
         </div>
       </section>
 
-      {/* 2. OFFRE SPÉCIALE DU MOMENT */}
-      <HomePromoBanner promo={activePromo} onAction={handlePromoAction} />
+      {/* Bannière de notification élégante si le serveur gratuit est en cours de réveil */}
+      {isServerWaking && dishes.length === 0 && (
+        <ServerWakingNotice
+          message="Préparation de nos spécialités…"
+          subMessage="Le serveur se réveille. La carte de nos grillades arrive dans un instant."
+        />
+      )}
 
-      {/* 3. PLATS POPULAIRES */}
+      {/* 2. OFFRE SPÉCIALE DU MOMENT (OU SQUELETTE) */}
+      {isLoading && promotions.length === 0 ? (
+        <HomePromoSkeleton />
+      ) : (
+        <HomePromoBanner promo={activePromo} onAction={handlePromoAction} />
+      )}
+
+      {/* 3. PLATS POPULAIRES (OU SQUELETTES) */}
       <section style={sectionStyle}>
         <div style={sectionHeaderStyle}>
           <div>
@@ -85,9 +104,17 @@ export const HomePage = ({
         </div>
 
         <div style={dishesGridStyle}>
-          {popularDishes.map((dish) => (
-            <DishCard key={dish._id} dish={dish} onSelect={onSelectDish} />
-          ))}
+          {isLoading && dishes.length === 0 ? (
+            <>
+              <DishCardSkeleton />
+              <DishCardSkeleton />
+              <DishCardSkeleton />
+            </>
+          ) : (
+            popularDishes.map((dish) => (
+              <DishCard key={dish._id} dish={dish} onSelect={onSelectDish} />
+            ))
+          )}
         </div>
       </section>
 

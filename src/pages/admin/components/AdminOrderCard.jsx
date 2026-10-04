@@ -1,18 +1,40 @@
 /**
  * Carte de commande individuelle pour l'administration (AdminOrderCard).
- * Présente le numéro, client, téléphone, adresse, montant et boutons d'action.
+ * Présente le numéro, client, téléphone, adresse, montant et boutons d'action (détails, avancement, archivage, suppression).
  */
 
 import React from 'react';
-import { Phone, MapPin, Eye, Check } from 'lucide-react';
+import { Phone, MapPin, Eye, Check, Archive, Trash2, RotateCcw } from 'lucide-react';
 import { getOrderStatusLabel, getOrderStatusBadgeStyle } from '../../../utils/statusLabels';
 
 export const AdminOrderCard = ({
   order,
   onSelectOrder,
-  onUpdateStatus
+  onUpdateStatus,
+  onArchiveOrder,
+  onUnarchiveOrder,
+  onDeleteOrder
 }) => {
   const formatPrice = (amount) => `${Number(amount || 0).toLocaleString('fr-FR')} FCFA`;
+
+  const isCompleted = ['DELIVERED', 'CANCELLED'].includes(order.status);
+  const isArchived = order.isArchived === true;
+
+  const handleDelete = (e) => {
+    e.stopPropagation();
+    if (window.confirm(`Êtes-vous sûr de vouloir supprimer définitivement la commande #${order.orderNumber} ?`)) {
+      if (onDeleteOrder) onDeleteOrder(order._id);
+    }
+  };
+
+  const handleArchive = (e) => {
+    e.stopPropagation();
+    if (isArchived) {
+      if (onUnarchiveOrder) onUnarchiveOrder(order._id);
+    } else {
+      if (onArchiveOrder) onArchiveOrder(order._id);
+    }
+  };
 
   return (
     <div className="card-surface" style={orderCardStyle}>
@@ -22,6 +44,9 @@ export const AdminOrderCard = ({
             <span style={orderNumberStyle}>{order.orderNumber}</span>
             {!order.isViewedByAdmin && (
               <span style={unreadBadgeStyle}>Non lue</span>
+            )}
+            {isArchived && (
+              <span style={archivedBadgeStyle}>Archivée</span>
             )}
           </div>
           <p style={dateStyle}>
@@ -80,6 +105,32 @@ export const AdminOrderCard = ({
               Cuisine
             </button>
           )}
+
+          {/* Bouton d'archivage / désarchivage pour les commandes terminées */}
+          {isCompleted && onArchiveOrder && (
+            <button
+              type="button"
+              onClick={handleArchive}
+              style={archiveButtonStyle}
+              title={isArchived ? 'Désarchiver la commande' : 'Archiver pour nettoyer la liste'}
+              aria-label={isArchived ? 'Désarchiver' : 'Archiver'}
+            >
+              {isArchived ? <RotateCcw size={14} /> : <Archive size={14} />}
+            </button>
+          )}
+
+          {/* Bouton de suppression pour commandes annulées ou archivées */}
+          {(order.status === 'CANCELLED' || isArchived) && onDeleteOrder && (
+            <button
+              type="button"
+              onClick={handleDelete}
+              style={deleteButtonStyle}
+              title="Supprimer définitivement"
+              aria-label="Supprimer la commande"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -115,6 +166,16 @@ const unreadBadgeStyle = {
   backgroundColor: 'var(--color-primary-surface)',
   color: 'var(--color-primary)',
   border: '1px solid var(--color-primary-light)'
+};
+
+const archivedBadgeStyle = {
+  fontSize: '0.65rem',
+  fontWeight: 800,
+  padding: '1px 6px',
+  borderRadius: '4px',
+  backgroundColor: 'var(--bg-card-header)',
+  color: 'var(--text-muted)',
+  border: '1px solid var(--border-color)'
 };
 
 const dateStyle = {
@@ -193,5 +254,29 @@ const confirmButtonStyle = {
   color: '#FFFFFF',
   fontSize: '0.78rem',
   fontWeight: 700,
+  cursor: 'pointer'
+};
+
+const archiveButtonStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '6px',
+  borderRadius: '8px',
+  backgroundColor: 'var(--bg-card-header)',
+  border: '1px solid var(--border-color)',
+  color: 'var(--color-primary)',
+  cursor: 'pointer'
+};
+
+const deleteButtonStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '6px',
+  borderRadius: '8px',
+  backgroundColor: 'var(--color-primary-surface)',
+  border: '1px solid var(--border-color)',
+  color: 'var(--status-error)',
   cursor: 'pointer'
 };

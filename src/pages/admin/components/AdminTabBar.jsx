@@ -7,9 +7,11 @@ import React, { useRef, useState, useEffect } from 'react';
 import {
   LayoutDashboard,
   ShoppingBag,
+  PackageCheck,
   UtensilsCrossed,
   Tag,
   Bike,
+  History,
   Sliders,
   ChevronRight,
   ChevronLeft
@@ -23,11 +25,14 @@ export const AdminTabBar = ({ activeSection, onSelectSection, pendingOrdersCount
   const sections = [
     { id: 'kpis', label: 'Indicateurs', icon: LayoutDashboard },
     { id: 'orders', label: 'Commandes', icon: ShoppingBag, badge: pendingOrdersCount },
+    { id: 'history', label: 'Historique', icon: PackageCheck },
     { id: 'menu', label: 'Menu & Plats', icon: UtensilsCrossed },
     { id: 'promos', label: 'Offres', icon: Tag },
     { id: 'drivers', label: 'Livreurs', icon: Bike },
+    { id: 'audit', label: 'Audit', icon: History },
     { id: 'settings', label: 'Paramètres', icon: Sliders }
   ];
+
 
   const updateScrollState = () => {
     if (!scrollContainerRef.current) return;

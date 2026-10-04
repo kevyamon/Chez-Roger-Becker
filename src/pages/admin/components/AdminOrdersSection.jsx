@@ -1,10 +1,10 @@
 /**
  * Section Gestion des Commandes en direct (AdminOrdersSection).
- * Filtrage par statut, recherche, skeletons de chargement et affichage optimisé.
+ * Filtrage par statut, recherche, archivage en lot et suppression ciblée.
  */
 
 import React, { useState } from 'react';
-import { Search, Clock } from 'lucide-react';
+import { Search, Clock, Archive } from 'lucide-react';
 import { AdminOrderCard } from './AdminOrderCard';
 import { Skeleton } from '../../../components/ui/Skeleton';
 
@@ -12,10 +12,15 @@ export const AdminOrdersSection = ({
   orders = [],
   onUpdateStatus,
   onSelectOrder,
+  onArchiveOrder,
+  onUnarchiveOrder,
+  onDeleteOrder,
+  onArchiveCompletedOrders,
   isLoading = false
 }) => {
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isArchivingAll, setIsArchivingAll] = useState(false);
 
   const statusFilters = [
     { id: 'ALL', label: 'Toutes' },
@@ -24,13 +29,22 @@ export const AdminOrdersSection = ({
     { id: 'ASSIGNED', label: 'Assignées' },
     { id: 'OUT_FOR_DELIVERY', label: 'En livraison' },
     { id: 'DELIVERED', label: 'Livrées' },
-    { id: 'CANCELLED', label: 'Annulées' }
+    { id: 'CANCELLED', label: 'Annulées' },
+    { id: 'ARCHIVED', label: 'Archivées' }
   ];
 
   const safeOrders = Array.isArray(orders) ? orders : (orders?.items || []);
 
   const filteredOrders = safeOrders.filter((ord) => {
-    const matchesStatus = filterStatus === 'ALL' || ord.status === filterStatus;
+    let matchesStatus = true;
+    if (filterStatus === 'ARCHIVED') {
+      matchesStatus = ord.isArchived === true;
+    } else if (filterStatus === 'ALL') {
+      matchesStatus = ord.isArchived !== true;
+    } else {
+      matchesStatus = ord.status === filterStatus && ord.isArchived !== true;
+    }
+
     const matchesSearch =
       !searchQuery.trim() ||
       ord.orderNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -39,19 +53,46 @@ export const AdminOrdersSection = ({
     return matchesStatus && matchesSearch;
   });
 
+  const handleArchiveCompleted = async () => {
+    if (!window.confirm('Voulez-vous archiver toutes les commandes livrées et annulées pour nettoyer la liste active ?')) {
+      return;
+    }
+    try {
+      setIsArchivingAll(true);
+      if (onArchiveCompletedOrders) await onArchiveCompletedOrders();
+    } finally {
+      setIsArchivingAll(false);
+    }
+  };
+
   return (
     <div style={containerStyle}>
       {/* 1. Barre de recherche et filtres rapides */}
       <div className="card-surface" style={filterCardStyle}>
-        <div style={searchWrapStyle}>
-          <Search size={16} color="var(--text-muted)" />
-          <input
-            type="text"
-            placeholder="Rechercher par numéro, nom ou téléphone..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={searchInputStyle}
-          />
+        <div style={searchRowStyle}>
+          <div style={searchWrapStyle}>
+            <Search size={16} color="var(--text-muted)" />
+            <input
+              type="text"
+              placeholder="Rechercher par numéro, nom ou téléphone..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={searchInputStyle}
+            />
+          </div>
+
+          {onArchiveCompletedOrders && (
+            <button
+              type="button"
+              onClick={handleArchiveCompleted}
+              disabled={isArchivingAll}
+              style={archiveBatchBtnStyle}
+              title="Archiver toutes les commandes livrées et annulées"
+            >
+              <Archive size={14} />
+              <span>{isArchivingAll ? 'Archivage…' : 'Archiver terminées'}</span>
+            </button>
+          )}
         </div>
 
         <div style={pillFilterWrapStyle}>
@@ -101,6 +142,9 @@ export const AdminOrdersSection = ({
               order={ord}
               onSelectOrder={onSelectOrder}
               onUpdateStatus={onUpdateStatus}
+              onArchiveOrder={onArchiveOrder}
+              onUnarchiveOrder={onUnarchiveOrder}
+              onDeleteOrder={onDeleteOrder}
             />
           ))}
         </div>
@@ -122,6 +166,13 @@ const filterCardStyle = {
   gap: '10px'
 };
 
+const searchRowStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  flexWrap: 'wrap'
+};
+
 const searchWrapStyle = {
   display: 'flex',
   alignItems: 'center',
@@ -129,7 +180,9 @@ const searchWrapStyle = {
   padding: '8px 12px',
   backgroundColor: 'var(--bg-card-header)',
   borderRadius: '8px',
-  border: '1px solid var(--border-color)'
+  border: '1px solid var(--border-color)',
+  flex: 1,
+  minWidth: '200px'
 };
 
 const searchInputStyle = {
@@ -139,6 +192,22 @@ const searchInputStyle = {
   outline: 'none',
   fontSize: '0.84rem',
   color: 'var(--text-primary)'
+};
+
+const archiveBatchBtnStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '5px',
+  padding: '8px 12px',
+  borderRadius: '8px',
+  backgroundColor: 'var(--color-primary-surface)',
+  color: 'var(--color-primary-dark)',
+  border: '1px solid var(--border-color)',
+  fontSize: '0.76rem',
+  fontWeight: 700,
+  cursor: 'pointer',
+  whiteSpace: 'nowrap',
+  transition: 'opacity 0.15s ease'
 };
 
 const pillFilterWrapStyle = {

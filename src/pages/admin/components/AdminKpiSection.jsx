@@ -4,12 +4,17 @@
  */
 
 import React from 'react';
-import { Hourglass, ChefHat, Bike, CheckCircle2, XCircle } from 'lucide-react';
+import { Hourglass, ChefHat, Bike, CheckCircle2, XCircle, Archive } from 'lucide-react';
 import { RevenueKpisCollapse } from './RevenueKpisCollapse';
 import { Skeleton } from '../../../components/ui/Skeleton';
 import { getOrderStatusLabel, getOrderStatusBadgeStyle } from '../../../utils/statusLabels';
 
-export const AdminKpiSection = ({ dashboardData, onSelectOrder, isLoading = false }) => {
+export const AdminKpiSection = ({
+  dashboardData,
+  onSelectOrder,
+  onArchiveOrder,
+  isLoading = false
+}) => {
   const kpi = dashboardData?.kpi || {};
   const recentOrders = dashboardData?.recentOrders || [];
   const formatPrice = (amount) => `${Number(amount || 0).toLocaleString('fr-FR')} FCFA`;
@@ -113,13 +118,29 @@ export const AdminKpiSection = ({ dashboardData, onSelectOrder, isLoading = fals
               >
                 <div>
                   <span style={orderNumberStyle}>{ord.orderNumber}</span>
-                  <p style={customerNameStyle}>{ord.customer?.firstName} {ord.customer?.lastName}</p>
+                  <p style={customerNameStyle}>{ord.customer?.firstName} {ord.customer?.lastName || ord.customer?.name}</p>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <strong style={orderPriceStyle}>{formatPrice(ord.total)}</strong>
-                  <span style={{ ...getOrderStatusBadgeStyle(ord.status), ...recentOrderBadgeStyle }}>
-                    {getOrderStatusLabel(ord.status)}
-                  </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ textAlign: 'right' }}>
+                    <strong style={orderPriceStyle}>{formatPrice(ord.total)}</strong>
+                    <span style={{ ...getOrderStatusBadgeStyle(ord.status), ...recentOrderBadgeStyle }}>
+                      {getOrderStatusLabel(ord.status)}
+                    </span>
+                  </div>
+                  {onArchiveOrder && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onArchiveOrder(ord._id);
+                      }}
+                      style={archiveActionBtnStyle}
+                      title="Archiver pour masquer de l'activité récente"
+                      aria-label="Archiver cette commande"
+                    >
+                      <Archive size={14} />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -238,4 +259,17 @@ const recentOrderBadgeStyle = {
   fontWeight: 700,
   padding: '2px 8px',
   borderRadius: '6px'
+};
+
+const archiveActionBtnStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '6px',
+  borderRadius: '6px',
+  backgroundColor: 'transparent',
+  color: 'var(--text-muted)',
+  border: 'none',
+  cursor: 'pointer',
+  transition: 'color 0.15s ease'
 };

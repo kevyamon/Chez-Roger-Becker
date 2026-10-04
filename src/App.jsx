@@ -1,17 +1,15 @@
 /**
  * Application principale Chez Roger Becker (App).
- * Orchestre le routage d'écran, le chargement de données, la persistance de session et les modales.
+ * Orchestre le routage d'écran, le chargement résilient, la persistance de session et les modales.
  */
 
 import React, { useState, useEffect } from 'react';
-import { apiClient } from './services/api';
-import { socket } from './services/socket';
 import { useAuth } from './context/AuthContext';
 import { useCart } from './context/CartContext';
 import { useToast } from './context/ToastContext';
 import { useAppStartup } from './hooks/useAppStartup';
+import { useRestaurantData } from './hooks/useRestaurantData';
 import { storageAdapter } from './utils/storageAdapter';
-import { getOrderStatusLabel } from './utils/statusLabels';
 
 // Composants Layout & UI
 import { Header } from './components/layout/Header';
@@ -33,10 +31,19 @@ import { DriverDashboardPage } from './pages/driver/DriverDashboardPage';
 
 export function App() {
   const { isAuthenticated, isAdmin, isDriver, isLoading: isAuthLoading } = useAuth();
-  const { addItem, setDeliveryFee } = useCart();
-  const { showSuccess, showInfo } = useToast();
+  const { addItem } = useCart();
+  const { showSuccess } = useToast();
 
   useAppStartup();
+
+  const {
+    categories,
+    dishes,
+    promotions,
+    restaurant,
+    isLoading: isDataLoading,
+    isServerWaking
+  } = useRestaurantData();
 
   const [activeTab, setActiveTab] = useState(() => {
     const hash = window.location.hash.replace('#', '');
@@ -48,10 +55,6 @@ export function App() {
     return sessionStorage.getItem('rb_active_tab') || 'home';
   });
 
-  const [categories, setCategories] = useState([]);
-  const [dishes, setDishes] = useState([]);
-  const [promotions, setPromotions] = useState([]);
-  const [restaurant, setRestaurant] = useState({});
   const [selectedDish, setSelectedDish] = useState(null);
   const [selectedDishQty, setSelectedDishQty] = useState(1);
   const [trackingToken, setTrackingToken] = useState(() => storageAdapter.getTrackingToken());
@@ -68,7 +71,7 @@ export function App() {
     sessionStorage.setItem('rb_active_tab', tab);
   };
 
-  // Synchronisation avec le bouton retour physique/virtuel du smartphone (popstate)
+  // Synchronisation avec l'historique et le bouton retour physique
   useEffect(() => {
     window.history.replaceState({ tab: activeTab }, '', `#${activeTab === 'home' ? '' : activeTab}`);
 
@@ -82,100 +85,10 @@ export function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-
-  // Chargement des données et réinitialisation instantanée du scroll en haut de page
+  // Défilement en haut de page à chaque changement d'onglet
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-
-    const fetchInitialData = async () => {
-      try {
-        const [catRes, dishRes, promoRes, restRes] = await Promise.all([
-          apiClient.get('/categories'),
-          apiClient.get('/dishes'),
-          apiClient.get('/promotions'),
-          apiClient.get('/restaurant')
-        ]);
-
-        if (catRes.success) setCategories(catRes.data?.categories || []);
-        if (dishRes.success) setDishes(dishRes.data?.dishes || []);
-        if (promoRes.success) setPromotions(promoRes.data?.promotions || []);
-        if (restRes.success && restRes.data?.restaurant) {
-          setRestaurant(restRes.data.restaurant);
-          if (restRes.data.restaurant.deliveryFee) {
-            setDeliveryFee(restRes.data.restaurant.deliveryFee);
-          }
-        }
-      } catch (err) {
-        console.warn('Échec du chargement initial :', err.message);
-      }
-    };
-
-    fetchInitialData();
   }, [activeTab]);
-
-  // Synchronisation temps réel Socket.IO (Public & PWA)
-  useEffect(() => {
-    const onRestaurantUpdate = (upd) => {
-      setRestaurant((prev) => ({ ...prev, ...upd }));
-      if (upd.deliveryFee !== undefined) setDeliveryFee(upd.deliveryFee);
-    };
-
-    const onDishCreated = (d) => setDishes((prev) => [d, ...prev.filter((i) => i._id !== d._id)]);
-    const onDishUpdated = (d) => {
-      setDishes((prev) => prev.map((i) => (i._id === d._id ? { ...i, ...d } : i)));
-      setSelectedDish((prev) => (prev && prev._id === d._id ? { ...prev, ...d } : prev));
-    };
-    const onDishDeleted = ({ dishId }) => {
-      setDishes((prev) => prev.filter((i) => i._id !== dishId));
-      setSelectedDish((prev) => (prev && prev._id === dishId ? null : prev));
-    };
-
-    const onCatCreated = (c) => setCategories((prev) => [...prev.filter((i) => i._id !== c._id), c]);
-    const onCatUpdated = (c) => setCategories((prev) => prev.map((i) => (i._id === c._id ? { ...i, ...c } : i)));
-    const onCatDeleted = ({ categoryId }) => setCategories((prev) => prev.filter((i) => i._id !== categoryId));
-
-    const onPromoCreated = (p) => setPromotions((prev) => [p, ...prev.filter((item) => item._id !== p._id)]);
-    const onPromoUpdated = (p) => setPromotions((prev) => prev.map((item) => (item._id === p._id ? { ...item, ...p } : item)));
-    const onPromoDeleted = ({ promoId }) => setPromotions((prev) => prev.filter((item) => item._id !== promoId));
-
-    const onOrderStatus = (data) => {
-      try {
-        const history = JSON.parse(localStorage.getItem('rb_orders_history') || '[]');
-        const match = history.find((o) => o.trackingToken === data.trackingToken || o.orderNumber === data.orderNumber);
-        if (match) {
-          const updated = history.map((o) => (o.trackingToken === data.trackingToken || o.orderNumber === data.orderNumber ? { ...o, status: data.status } : o));
-          localStorage.setItem('rb_orders_history', JSON.stringify(updated));
-          showInfo(`Votre commande #${data.orderNumber || match.orderNumber} : ${getOrderStatusLabel(data.status)}`);
-        }
-      } catch {}
-    };
-
-    socket.on('restaurant:updated', onRestaurantUpdate);
-    socket.on('dish:created', onDishCreated);
-    socket.on('dish:updated', onDishUpdated);
-    socket.on('dish:deleted', onDishDeleted);
-    socket.on('category:created', onCatCreated);
-    socket.on('category:updated', onCatUpdated);
-    socket.on('category:deleted', onCatDeleted);
-    socket.on('promotion:created', onPromoCreated);
-    socket.on('promotion:updated', onPromoUpdated);
-    socket.on('promotion:deleted', onPromoDeleted);
-    socket.on('order:status-changed', onOrderStatus);
-
-    return () => {
-      socket.off('restaurant:updated', onRestaurantUpdate);
-      socket.off('dish:created', onDishCreated);
-      socket.off('dish:updated', onDishUpdated);
-      socket.off('dish:deleted', onDishDeleted);
-      socket.off('category:created', onCatCreated);
-      socket.off('category:updated', onCatUpdated);
-      socket.off('category:deleted', onCatDeleted);
-      socket.off('promotion:created', onPromoCreated);
-      socket.off('promotion:updated', onPromoUpdated);
-      socket.off('promotion:deleted', onPromoDeleted);
-      socket.off('order:status-changed', onOrderStatus);
-    };
-  }, []);
 
   const handleSelectDish = (dish) => {
     setSelectedDish(dish);
@@ -199,9 +112,28 @@ export function App() {
   const renderActiveScreen = () => {
     switch (activeTab) {
       case 'home':
-        return <HomePage dishes={dishes} promotions={promotions} categories={categories} restaurant={restaurant} onNavigate={handleNavigate} onSelectDish={handleSelectDish} />;
+        return (
+          <HomePage
+            dishes={dishes}
+            promotions={promotions}
+            categories={categories}
+            restaurant={restaurant}
+            isLoading={isDataLoading}
+            isServerWaking={isServerWaking}
+            onNavigate={handleNavigate}
+            onSelectDish={handleSelectDish}
+          />
+        );
       case 'menu':
-        return <MenuPage dishes={dishes} categories={categories} onSelectDish={handleSelectDish} />;
+        return (
+          <MenuPage
+            dishes={dishes}
+            categories={categories}
+            isLoading={isDataLoading}
+            isServerWaking={isServerWaking}
+            onSelectDish={handleSelectDish}
+          />
+        );
       case 'cart':
         return <CartPage onNavigate={handleNavigate} />;
       case 'checkout':

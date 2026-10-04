@@ -1,46 +1,98 @@
 /**
- * Section Journal d'Audit & Tracabilite (AdminAuditSection).
- * Consultation des actions de securite et d'administration effectuees.
+ * Section Journal d'Audit & Traçabilité (AdminAuditSection).
+ * Consultation des actions de sécurité, suppression ciblée et purge du journal.
  */
 
-import React from 'react';
-import { History, Shield, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { History, Shield, Clock, Trash2, AlertTriangle } from 'lucide-react';
+import { Button } from '../../../components/ui/Button';
 
-export const AdminAuditSection = ({ auditLogs = [], isLoading }) => {
+export const AdminAuditSection = ({
+  auditLogs = [],
+  isLoading = false,
+  onDeleteLog,
+  onClearLogs
+}) => {
+  const [deletingId, setDeletingId] = useState(null);
+  const [isClearing, setIsClearing] = useState(false);
+
   const formatActionName = (action) => {
     switch (action) {
       case 'ADMIN_REGISTERED': return 'Inscription Administrateur';
       case 'DISH_CREATED': return 'Création de Plat';
       case 'DISH_UPDATED': return 'Modification de Plat';
+      case 'DISH_DELETED': return 'Suppression de Plat';
       case 'DRIVER_CREATED': return 'Création Compte Livreur';
       case 'DRIVER_UPDATED': return 'Mise à jour Livreur';
-      case 'ORDER_STATUS_UPDATED': return 'Changement Statut Commande';
+      case 'DRIVER_DELETED': return 'Suppression Livreur';
+      case 'ORDER_STATUS_UPDATED':
+      case 'ORDER_STATUS_CHANGED': return 'Changement Statut Commande';
+      case 'ORDER_ARCHIVED': return 'Archivage Commande';
+      case 'ORDER_DELETED': return 'Suppression Commande';
       case 'RESTAURANT_SETTINGS_UPDATED': return 'Mise à jour Paramètres';
       case 'PROMOTION_CREATED': return 'Création Offre Promo';
+      case 'PROMOTION_DELETED': return 'Suppression Offre Promo';
+      case 'AUDIT_LOGS_CLEARED': return 'Purge du Journal d\'Audit';
       default: return action;
+    }
+  };
+
+  const handleConfirmClear = async () => {
+    if (!window.confirm('Êtes-vous certain de vouloir purger l’ensemble du journal d’audit ? Cette action est irréversible.')) {
+      return;
+    }
+    try {
+      setIsClearing(true);
+      if (onClearLogs) await onClearLogs();
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
+  const handleDeleteItem = async (logId) => {
+    try {
+      setDeletingId(logId);
+      if (onDeleteLog) await onDeleteLog(logId);
+    } finally {
+      setDeletingId(null);
     }
   };
 
   return (
     <div style={containerStyle}>
       <div className="card-surface" style={headerCardStyle}>
-        <div style={headerTitleRowStyle}>
-          <div style={iconBadgeStyle}>
-            <History size={18} color="var(--color-primary)" />
+        <div style={headerTopRowStyle}>
+          <div style={headerTitleRowStyle}>
+            <div style={iconBadgeStyle}>
+              <History size={18} color="var(--color-primary)" />
+            </div>
+            <div>
+              <h3 style={titleStyle}>Journal d’Audit & Traçabilité</h3>
+              <p style={subtitleStyle}>Historique des opérations et actions d’administration.</p>
+            </div>
           </div>
-          <div>
-            <h3 style={titleStyle}>Journal d'Audit & Traçabilité</h3>
-            <p style={subtitleStyle}>Historique immuable des opérations sensibles et administratives.</p>
-          </div>
+
+          {auditLogs.length > 0 && (
+            <button
+              type="button"
+              onClick={handleConfirmClear}
+              disabled={isClearing}
+              style={clearBtnStyle}
+              title="Purger tout le journal d'audit"
+            >
+              <Trash2 size={14} />
+              <span>{isClearing ? 'Purge…' : 'Purger tout'}</span>
+            </button>
+          )}
         </div>
       </div>
 
       {isLoading ? (
-        <p style={messageStyle}>Chargement du journal d'audit...</p>
+        <p style={messageStyle}>Chargement du journal d’audit…</p>
       ) : auditLogs.length === 0 ? (
         <div className="card-surface" style={emptyCardStyle}>
           <Shield size={32} color="var(--text-muted)" />
-          <p style={messageStyle}>Aucune action d'audit enregistrée pour le moment.</p>
+          <p style={messageStyle}>Aucune action d’audit enregistrée pour le moment.</p>
         </div>
       ) : (
         <div style={logsListStyle}>
@@ -48,9 +100,23 @@ export const AdminAuditSection = ({ auditLogs = [], isLoading }) => {
             <div key={log._id} className="card-surface" style={logCardStyle}>
               <div style={logHeaderStyle}>
                 <span style={actionBadgeStyle}>{formatActionName(log.action)}</span>
-                <div style={dateWrapStyle}>
-                  <Clock size={12} color="var(--text-muted)" />
-                  <span>{new Date(log.createdAt).toLocaleString('fr-FR')}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={dateWrapStyle}>
+                    <Clock size={12} color="var(--text-muted)" />
+                    <span>{new Date(log.createdAt).toLocaleString('fr-FR')}</span>
+                  </div>
+                  {onDeleteLog && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteItem(log._id)}
+                      disabled={deletingId === log._id}
+                      style={deleteItemBtnStyle}
+                      title="Supprimer cette entrée"
+                      aria-label="Supprimer cette entrée"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -82,6 +148,14 @@ const headerCardStyle = {
   gap: '8px'
 };
 
+const headerTopRowStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  flexWrap: 'wrap',
+  gap: '10px'
+};
+
 const headerTitleRowStyle = {
   display: 'flex',
   alignItems: 'center',
@@ -108,6 +182,34 @@ const titleStyle = {
 const subtitleStyle = {
   fontSize: '0.76rem',
   color: 'var(--text-secondary)'
+};
+
+const clearBtnStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '5px',
+  padding: '6px 10px',
+  borderRadius: '8px',
+  backgroundColor: 'var(--color-primary-surface)',
+  color: 'var(--status-error)',
+  border: '1px solid var(--border-color)',
+  fontSize: '0.74rem',
+  fontWeight: 700,
+  cursor: 'pointer',
+  transition: 'opacity 0.15s ease'
+};
+
+const deleteItemBtnStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '4px',
+  borderRadius: '6px',
+  color: 'var(--text-muted)',
+  backgroundColor: 'transparent',
+  border: 'none',
+  cursor: 'pointer',
+  transition: 'color 0.15s ease'
 };
 
 const logsListStyle = {
